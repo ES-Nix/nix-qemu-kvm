@@ -13,19 +13,14 @@
         config = { allowUnfree = true; };
       };
 
+      pkgs = nixpkgs.legacyPackages.${system};
     in
     {
       packages.myqemu = import ./myqemu.nix {
         pkgs = nixpkgs.legacyPackages.${system};
       };
 
-        devShell = pkgsAllowUnfree.mkShell {
-          buildInputs = with pkgsAllowUnfree; [
-                                 qemu
-                                 wget
-                                 cloud-utils
-                                ];
-      };
+      devShell = import ./shell.nix { inherit pkgs; };
     }
   );
 }
