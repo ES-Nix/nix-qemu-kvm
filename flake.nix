@@ -18,7 +18,7 @@
       packages.myqemu = import ./myqemu.nix {
         pkgs = nixpkgs.legacyPackages.${system};
       };
-      #defaultPackage = self.packages.${system}.default;
+
         devShell = pkgsAllowUnfree.mkShell {
           buildInputs = with pkgsAllowUnfree; [
                                  qemu
