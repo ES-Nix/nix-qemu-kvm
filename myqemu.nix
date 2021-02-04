@@ -9,9 +9,9 @@ rec {
   };
 
   config = {
-    cpus = 4;
-    memory = "16G";
-    disk = "128G";
+    cpus = 16;
+    memory = "2G";
+    disk = "8G";
   };
 
   # This is the cloud-init config
