@@ -8,14 +8,19 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
     let
-      pkgs = import nixpkgs {
+      pkgsAllowUnfree = import nixpkgs {
         system = "x86_64-linux";
-        #config = { allowUnfree = true; };
+        config = { allowUnfree = true; };
       };
+
     in
     {
-      devShell = pkgs.mkShell {
-        buildInputs = with pkgs; [ 
+      packages.myqemu = import ./myqemu.nix {
+        pkgs = nixpkgs.legacyPackages.${system};
+      };
+      #defaultPackage = self.packages.${system}.default;
+        devShell = pkgsAllowUnfree.mkShell {
+          buildInputs = with pkgsAllowUnfree; [
                                  qemu
                                  wget
                                  cloud-utils
