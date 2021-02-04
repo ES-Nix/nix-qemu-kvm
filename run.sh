@@ -15,6 +15,12 @@ if [ ! -f ubuntu-20.04-minimal-cloudimg-amd64.img ]; then
     wget https://cloud-images.ubuntu.com/minimal/releases/focal/release-20210130/ubuntu-20.04-minimal-cloudimg-amd64.img
 fi
 
+
+if [ ! -f teste.qcow2 ]; then
+    echo "Not found the file teste.qcow2! Creating it!"
+    qemu-img create -f qcow2 -o backing_file=ubuntu-20.04-minimal-cloudimg-amd64.img teste.qcow2 8G
+fi
+
 if [ ! -f teste.qcow2 ]; then
     echo "Not found the file teste.qcow2! Creating it!"
     qemu-img create -f qcow2 -o backing_file=ubuntu-20.04-minimal-cloudimg-amd64.img teste.qcow2 8G
