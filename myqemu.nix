@@ -3,9 +3,14 @@ let
   img_orig = "ubuntu-20.04-server-cloudimg-amd64.img";
 in
 rec {
+  #image = pkgs.fetchurl {
+  #  url = "https://cloud-images.ubuntu.com/releases/focal/release-20201102/${img_orig}";
+  #  hash = "sha256-6/jnDBe5WmGy3K+EajY3yZyvQ0itcUcNOnAf0aTFOUY=";
+  #};
+
   image = pkgs.fetchurl {
-    url = "https://cloud-images.ubuntu.com/releases/focal/release-20201102/${img_orig}";
-    hash = "sha256-6/jnDBe5WmGy3K+EajY3yZyvQ0itcUcNOnAf0aTFOUY=";
+    url = "https://cloud-images.ubuntu.com/releases/18.04/release/ubuntu-18.04-server-cloudimg-amd64.img";
+    hash = "sha256-2CKReVObP7TfFnwYW083Iy7KAcmJVxpK3x2T99kN2HI=";
   };
 
   config = {
