@@ -37,6 +37,16 @@ rec {
       expire = false;
     };
     ssh_pwauth = true;
+
+#    users = {
+#        name = "user";
+#        passwd = "pwuser";
+#        lock_passwd = "false";
+#        groups = "usergroup";
+#        shell = "${toString "/bin/bash"}";
+#        sudo = "${toString "ALL=(ALL) NOPASSWD:ALL"}";
+#    };
+
     mounts = [
       [ "hostshare" "/mnt" "9p" "defaults,trans=virtio,version=9p2000.L" ]
     ];

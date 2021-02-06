@@ -4,6 +4,7 @@ mkShell {
   buildInputs = [
     cloud-utils
     nixpkgs-fmt
+    openssh
     qemu
     wget
   ];

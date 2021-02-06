@@ -28,6 +28,7 @@ qemu = pexpect.spawn(
 
 # work around a bug in the image
 qemu.expect(u"error: no such device: root.")
+# Yes, password is hardcoded here too!
 qemu.sendline("b")
 
 log("waiting on boot to finish")
