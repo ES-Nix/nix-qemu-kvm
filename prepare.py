@@ -28,7 +28,7 @@ qemu = pexpect.spawn(
 
 # work around a bug in the image
 qemu.expect(u"error: no such device: root.")
-qemu.sendline("")
+qemu.sendline("b")
 
 log("waiting on boot to finish")
 
@@ -38,7 +38,7 @@ log("logging in")
 
 qemu.sendline("ubuntu")
 qemu.expect(u"Password:")
-qemu.sendline("ubuntu")
+qemu.sendline("b")
 qemu.expect(u"ubuntu@ubuntu")
 
 log("entering qemu menu")

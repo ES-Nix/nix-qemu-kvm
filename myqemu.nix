@@ -1,6 +1,10 @@
 { pkgs ?  import <nixpkgs> {} }:
 let
   img_orig = "ubuntu-20.04-server-cloudimg-amd64.img";
+
+  # It is NOT working!
+  user_name = "ubuntu";
+  user_password = "b";
 in
 rec {
   #image = pkgs.fetchurl {
@@ -24,11 +28,11 @@ rec {
     ssh_authorized_keys = [
       (builtins.readFile ./vagrant.pub)
     ];
-    password = "ubuntu";
+    password = "${user_password}";
     chpasswd = {
       list = [
         "root:root"
-        "ubuntu:ubuntu"
+        "${user_name}:${user_password}"
       ];
       expire = false;
     };
@@ -82,7 +86,7 @@ rec {
     trap 'rm $sshKey' EXIT
     cp ${./vagrant} "$sshKey"
     chmod 0600 "$sshKey"
-    ssh -i "$sshKey" ubuntu@127.0.0.1 -p 10022 "$@"
+    ssh -i "$sshKey" ${user_name}@127.0.0.1 -p 10022 "$@"
   '';
 
   # Prepare the VM snapshot for faster resume.
