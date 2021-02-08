@@ -29,6 +29,8 @@ Most of this source is from [zimbatm](https://github.com/zimbatm/nix-experiments
 - [Understanding /etc/passwd File Format](https://www.cyberciti.biz/faq/understanding-etcpasswd-file-format/)
 - [Understanding /etc/shadow file](https://www.cyberciti.biz/faq/understanding-etcshadow-file/)
 - [How do I set a custom password with Cloud-init on Ubuntu 20.04?](https://stackoverflow.com/a/61868231)
+- [Password in cloud-init doesn’t seem to work, default one does though (for ubuntu)](https://discuss.linuxcontainers.org/t/password-in-cloud-init-doesnt-seem-to-work-default-one-does-though-for-ubuntu/9401/8)
+- [local-hostname: instance-1](https://medium.com/@art.vasilyev/use-ubuntu-cloud-image-with-kvm-1f28c19f82f8)
 
 ## Troubloshoting a bug in my setup with poetry2nix
 
