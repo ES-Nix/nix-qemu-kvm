@@ -7,8 +7,8 @@ First working relevant commit:
 
 
 ```
-nix build github:ES-Nix/nix-qemu-kvm/4eb16f137bdf4c7220551465a28f82396e6fb8d2#myqemu.prepare
- ./result/runVM
+nix build github:ES-Nix/nix-qemu-kvm/f991d5a3125df5524f92600e778ae3581f2a26b7#myqemu.prepare
+./result/runVM
 ```
 
 ```
