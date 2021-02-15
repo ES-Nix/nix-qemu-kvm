@@ -2,3 +2,5 @@
 *.qcow2
 *.img
 result
+userdata.qcow2.backup
+disk.qcow2.backup

@@ -130,8 +130,13 @@ rec {
       if [[ ! -f disk.qcow2 ]]; then
         # Setup the VM configuration on boot
         cp --reflink=auto "$out/disk.qcow2" disk.qcow2
+        chmod +w disk.qcow2
+      fi
+
+      if [[ ! -f userdata.qcow2 ]]; then
+        # Setup the VM configuration on boot
         cp --reflink=auto "$out/userdata.qcow2" userdata.qcow2
-        chmod +w disk.qcow2 userdata.qcow2
+        chmod +w userdata.qcow2
       fi
 
       # And finally boot qemu with a bunch of arguments
@@ -149,5 +154,35 @@ rec {
       exec ${runVM} disk.qcow2 userdata.qcow2 "\''${args[@]}"
       WRAP
       chmod +x $out/runVM
+
+      cat <<WRAP > $out/backupCurrentState
+      #!${pkgs.stdenv.shell}
+      set -euo pipefail
+
+      cp --verbose disk.qcow2 disk.qcow2.backup
+      cp --verbose userdata.qcow2 userdata.qcow2.backup
+
+      WRAP
+      chmod +x $out/backupCurrentState
+
+      cat <<WRAP > $out/resetToBackup
+      #!${pkgs.stdenv.shell}
+      set -euo pipefail
+
+      cp --verbose disk.qcow2.backup disk.qcow2
+      cp --verbose userdata.qcow2.backup userdata.qcow2
+
+      WRAP
+      chmod +x $out/resetToBackup
+
+      cat <<WRAP > $out/refresh
+      #!${pkgs.stdenv.shell}
+      set -euo pipefail
+
+      rm --force --verbose disk.qcow2 userdata.qcow2
+
+      WRAP
+      chmod +x $out/refresh
+
     '';
   }
