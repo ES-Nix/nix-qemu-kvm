@@ -7,14 +7,19 @@ First working relevant commit:
 
 
 ```
-nix build github:ES-Nix/nix-qemu-kvm/f991d5a3125df5524f92600e778ae3581f2a26b7#myqemu.prepare
+nix build github:ES-Nix/nix-qemu-kvm/21a9ce5bbfef655e3df5719c83aa21aa31d1a536#qemu.prepare
 ./result/runVM
 ```
 
+## Intalling via git
 ```
-nix build .#myqemu.prepare
-./result/runVM
+git clone https://github.com/ES-Nix/nix-qemu-kvm.git \
+&& cd nix-qemu-kvm \
+&& git checkout c16c4bed78398af43cd3d3f0f1ddb4491df5f479 \
+&& nix build .#qemu.prepare \
+&& ./result/runVM
 ```
+
 ## Credits 
 
 Most of this source is from [zimbatm](https://github.com/zimbatm/nix-experiments/tree/5e4f6941b8f3e90525c4b2acbdd78c766e1f757e/ubuntu-vm).
