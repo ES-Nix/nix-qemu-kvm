@@ -14,7 +14,7 @@ rec {
 
   image = pkgs.fetchurl {
     url = "https://cloud-images.ubuntu.com/releases/18.04/release/ubuntu-18.04-server-cloudimg-amd64.img";
-    hash = "sha256-mG4TemnY7HWXUnUEVPGbwSRB0b5xwEKqIwXsXS5t2IQ=";
+    hash = "sha256-WrdRtT0lBJPFdH9xyK1iYbDcVVHCbRCg8oYtfNynf1c=";
   };
 
   config = {
@@ -183,6 +183,23 @@ rec {
 
       WRAP
       chmod +x $out/refresh
+
+      cat <<WRAP > $out/clean_all
+      #!${pkgs.stdenv.shell}
+        set -euo pipefail
+        rm --force --recursive --verbose \
+        teste.qcow2 \
+        ubuntu-20.04-minimal-cloudimg-amd64.img \
+        user-data.img \
+        disk.qcow2 \
+        teste18.04.qcow2 \
+        userdata.qcow2 \
+        ubuntu-18.04-server-cloudimg-amd64.img \
+        disk.qcow2.backup \
+        userdata.qcow2.backup
+
+      WRAP
+      chmod +x $out/clean_all
 
     '';
   }
