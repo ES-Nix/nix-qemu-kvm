@@ -16,7 +16,7 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in
     {
-      packages.myqemu = import ./myqemu.nix {
+      packages.qemu = import ./qemu.nix {
         pkgs = nixpkgs.legacyPackages.${system};
       };
 
