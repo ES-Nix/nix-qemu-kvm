@@ -14,13 +14,13 @@ rec {
 
   image = pkgs.fetchurl {
     url = "https://cloud-images.ubuntu.com/releases/18.04/release/ubuntu-18.04-server-cloudimg-amd64.img";
-    hash = "sha256-WrdRtT0lBJPFdH9xyK1iYbDcVVHCbRCg8oYtfNynf1c=";
+    hash = "sha256-cFDkTDLCal9/MmxuwNo9/CQJCiu3lg0yxRIm2+fi1iU=";
   };
 
   config = {
     cpus = 16;
-    memory = "2G";
-    disk = "8G";
+    memory = "1G";
+    disk = "5G";
   };
 
   # This is the cloud-init config
