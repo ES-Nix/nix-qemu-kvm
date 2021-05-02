@@ -7,7 +7,7 @@ First working relevant commit:
 
 
 ```
-nix build github:ES-Nix/nix-qemu-kvm/65d1358567e6c8309158dc04d299090846576fe2#qemu.prepare
+nix build github:ES-Nix/nix-qemu-kvm/51c7b855f579d806969bef8d93b3ff96830ff294#qemu.prepare
 ./result/runVM
 ```
 
