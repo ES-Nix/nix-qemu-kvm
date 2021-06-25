@@ -79,10 +79,10 @@ rec {
       -drive "file=$image,format=qcow2"
       -drive "file=$userdata,format=qcow2"
       -enable-kvm
-      -m 2G
+      -m 15G
       -nographic
       -serial mon:stdio
-      -smp 2
+      -smp 8
       -device "rtl8139,netdev=net0"
       -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:22"
     )
@@ -145,6 +145,8 @@ rec {
         #-vga virtio
         # Share the nix folder with the guest
         -virtfs "local,security_model=passthrough,id=fsdev0,path=\$PWD,readonly,mount_tag=hostshare"
+        -cpu Haswell-noTSX-IBRS,vmx=on
+        -enable-kvm
       )
 
       echo "Starting VM."
