@@ -153,7 +153,7 @@ curl -fsSL https://get.docker.com | sudo sh \
 
 ```bash
 sudo chown -R ubuntu:kvm /dev/kvm /dev/pts /dev/ptmx
-nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.prepare
+nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.prepare-l
 nix shell nixpkgs#coreutils --command timeout 60 result/runVML result/runVML
 nix store gc
 nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.prepare

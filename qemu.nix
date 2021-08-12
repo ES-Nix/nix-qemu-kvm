@@ -105,10 +105,10 @@ rec {
     args=(
       -drive "file=$image,format=qcow2"
       -drive "file=$userdata,format=qcow2"
-      -m 15G
+      -m 5G
       -nographic
       -serial mon:stdio
-      -smp 8
+      -smp 4
       -device "rtl8139,netdev=net0"
       -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:22"
     )
@@ -183,39 +183,6 @@ rec {
       exec ${runVM} disk.qcow2 userdata.qcow2 "\''${args[@]}"
       WRAP
       chmod +x $out/runVM
-
-      #
-      cat <<WRAP > $out/runVML
-      #!${pkgs.stdenv.shell}
-      set -euo pipefail
-
-      if [[ ! -f disk.qcow2 ]]; then
-        # Setup the VM configuration on boot
-        cp --reflink=auto "$out/disk.qcow2" disk.qcow2
-        chmod +w disk.qcow2
-      fi
-
-      if [[ ! -f userdata.qcow2 ]]; then
-        # Setup the VM configuration on boot
-        cp --reflink=auto "$out/userdata.qcow2" userdata.qcow2
-        chmod +w userdata.qcow2
-      fi
-
-      # And finally boot qemu with a bunch of arguments
-      args=(
-        #-loadvm prepare
-        #-vga virtio
-        # Share the nix folder with the guest
-        -virtfs "local,security_model=passthrough,id=fsdev0,path=\$PWD,readonly,mount_tag=hostshare"
-      )
-
-      echo "Starting VM."
-      echo "To login: ubuntu / ubuntu"
-      echo "To quit: type 'Ctrl+a c' then 'quit'"
-      echo "Press enter in a few seconds"
-      exec ${runVML} disk.qcow2 userdata.qcow2 "\''${args[@]}"
-      WRAP
-      chmod +x $out/runVML
 
       #
       cat <<WRAP > $out/refresh
