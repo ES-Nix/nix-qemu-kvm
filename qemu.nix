@@ -278,4 +278,62 @@ rec {
       chmod +x $out/resetToBackup
 
     '';
+
+  # Prepare the VM snapshot for faster resume.
+  prepare-l = pkgs.runCommand "prepare-l"
+    { buildInputs = [ pkgs.qemu (pkgs.python.withPackages (p: [ p.pexpect ])) ]; }
+    ''
+      export LANG=C.UTF-8
+      export LC_ALL=C.UTF-8
+
+      # copy the images to work on them
+      cp --reflink=auto "${image}" disk.qcow2
+      cp --reflink=auto "${userdata}" userdata.qcow2
+      chmod +w disk.qcow2 userdata.qcow2
+
+      # Make some room on the root image
+      qemu-img resize disk.qcow2 +64G
+
+      # Run the automated installer
+      python ${./prepare.py} ${runVML} disk.qcow2 userdata.qcow2
+
+      # At this point the disk should have a named snapshot
+      qemu-img snapshot -l disk.qcow2 | grep prepare
+
+      mkdir $out
+      mv disk.qcow2 userdata.qcow2 $out/
+
+      #
+      cat <<WRAP > $out/runVML
+      #!${pkgs.stdenv.shell}
+      set -euo pipefail
+
+      if [[ ! -f disk.qcow2 ]]; then
+        # Setup the VM configuration on boot
+        cp --reflink=auto "$out/disk.qcow2" disk.qcow2
+        chmod +w disk.qcow2
+      fi
+
+      if [[ ! -f userdata.qcow2 ]]; then
+        # Setup the VM configuration on boot
+        cp --reflink=auto "$out/userdata.qcow2" userdata.qcow2
+        chmod +w userdata.qcow2
+      fi
+
+      # And finally boot qemu with a bunch of arguments
+      args=(
+        #-loadvm prepare
+        #-vga virtio
+        # Share the nix folder with the guest
+        -virtfs "local,security_model=passthrough,id=fsdev0,path=\$PWD,readonly,mount_tag=hostshare"
+      )
+
+      echo "Starting VM."
+      echo "To login: ubuntu / ubuntu"
+      echo "To quit: type 'Ctrl+a c' then 'quit'"
+      echo "Press enter in a few seconds"
+      exec ${runVML} disk.qcow2 userdata.qcow2 "\''${args[@]}"
+      WRAP
+      chmod +x $out/runVML
+    '';
 }
