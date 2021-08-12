@@ -93,6 +93,30 @@ rec {
     exec ${pkgs.qemu}/bin/qemu-system-x86_64 "''${args[@]}" "$@"
   '';
 
+  runVML = pkgs.writeShellScript "runVML" ''
+    #
+    # Starts the VM with the given system image
+    #
+    set -euo pipefail
+    image=$1
+    userdata=$2
+    shift 2
+
+    args=(
+      -drive "file=$image,format=qcow2"
+      -drive "file=$userdata,format=qcow2"
+      -m 15G
+      -nographic
+      -serial mon:stdio
+      -smp 8
+      -device "rtl8139,netdev=net0"
+      -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:22"
+    )
+
+    set -x
+    exec ${pkgs.qemu}/bin/qemu-system-x86_64 "''${args[@]}" "$@"
+  '';
+
   sshClient = pkgs.writeShellScript "sshVM" ''
     sshKey=$(mktemp)
     trap 'rm $sshKey' EXIT
@@ -189,7 +213,7 @@ rec {
       echo "To login: ubuntu / ubuntu"
       echo "To quit: type 'Ctrl+a c' then 'quit'"
       echo "Press enter in a few seconds"
-      exec ${runVM} disk.qcow2 userdata.qcow2 "\''${args[@]}"
+      exec ${runVML} disk.qcow2 userdata.qcow2 "\''${args[@]}"
       WRAP
       chmod +x $out/runVML
 
@@ -254,16 +278,4 @@ rec {
       chmod +x $out/resetToBackup
 
     '';
-
-  scripts = pkgs.runCommand "scripts"
-    { buildInputs = [ pkgs.stdenv ]; }
-    ''
-      export LANG=C.UTF-8
-      export LC_ALL=C.UTF-8
-
-      mkdir $out
-
-
-    '';
-
 }
