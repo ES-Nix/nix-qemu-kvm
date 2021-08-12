@@ -14,7 +14,7 @@ rec {
 
   image = pkgs.fetchurl {
     url = "https://cloud-images.ubuntu.com/releases/18.04/release/ubuntu-18.04-server-cloudimg-amd64.img";
-    hash = "sha256-UMONP3MH/ncMFaabMW0AAawo5IQjkhjSPhyoyOfsmhA=";
+    hash = "sha256-lJQF3FAKzWlgzS4bQ+9p0mfuTe8+sToB2aIgXfNwi3M=";
   };
 
   config = {
@@ -85,6 +85,8 @@ rec {
       -smp 8
       -device "rtl8139,netdev=net0"
       -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:22"
+      -cpu Haswell-noTSX-IBRS,vmx=on
+      -cpu host
     )
 
     set -x
@@ -123,6 +125,7 @@ rec {
       mkdir $out
       mv disk.qcow2 userdata.qcow2 $out/
 
+      #
       cat <<WRAP > $out/runVM
       #!${pkgs.stdenv.shell}
       set -euo pipefail
@@ -157,26 +160,40 @@ rec {
       WRAP
       chmod +x $out/runVM
 
-      cat <<WRAP > $out/backupCurrentState
+      #
+      cat <<WRAP > $out/runVML
       #!${pkgs.stdenv.shell}
       set -euo pipefail
 
-      cp --verbose disk.qcow2 disk.qcow2.backup
-      cp --verbose userdata.qcow2 userdata.qcow2.backup
+      if [[ ! -f disk.qcow2 ]]; then
+        # Setup the VM configuration on boot
+        cp --reflink=auto "$out/disk.qcow2" disk.qcow2
+        chmod +w disk.qcow2
+      fi
 
+      if [[ ! -f userdata.qcow2 ]]; then
+        # Setup the VM configuration on boot
+        cp --reflink=auto "$out/userdata.qcow2" userdata.qcow2
+        chmod +w userdata.qcow2
+      fi
+
+      # And finally boot qemu with a bunch of arguments
+      args=(
+        #-loadvm prepare
+        #-vga virtio
+        # Share the nix folder with the guest
+        -virtfs "local,security_model=passthrough,id=fsdev0,path=\$PWD,readonly,mount_tag=hostshare"
+      )
+
+      echo "Starting VM."
+      echo "To login: ubuntu / ubuntu"
+      echo "To quit: type 'Ctrl+a c' then 'quit'"
+      echo "Press enter in a few seconds"
+      exec ${runVM} disk.qcow2 userdata.qcow2 "\''${args[@]}"
       WRAP
-      chmod +x $out/backupCurrentState
+      chmod +x $out/runVML
 
-      cat <<WRAP > $out/resetToBackup
-      #!${pkgs.stdenv.shell}
-      set -euo pipefail
-
-      cp --verbose disk.qcow2.backup disk.qcow2
-      cp --verbose userdata.qcow2.backup userdata.qcow2
-
-      WRAP
-      chmod +x $out/resetToBackup
-
+      #
       cat <<WRAP > $out/refresh
       #!${pkgs.stdenv.shell}
       set -euo pipefail
@@ -186,6 +203,7 @@ rec {
       WRAP
       chmod +x $out/refresh
 
+      #
       cat <<WRAP > $out/clean_all
       #!${pkgs.stdenv.shell}
         set -euo pipefail
@@ -203,5 +221,49 @@ rec {
       WRAP
       chmod +x $out/clean_all
 
+      #
+      cat <<WRAP > $out/backupCurrentState
+      #!${pkgs.stdenv.shell}
+      # set -euo pipefail
+
+      backup_name=\$1
+      if [ -z "\$backup_name" ]; then
+        backup_name='default';
+      fi
+
+      cp --verbose disk.qcow2 "\$backup_name".disk.qcow2.backup
+      cp --verbose userdata.qcow2 "\$backup_name".userdata.qcow2.backup
+
+      WRAP
+      chmod +x $out/backupCurrentState
+
+      #
+      cat <<WRAP > $out/resetToBackup
+      #!${pkgs.stdenv.shell}
+      # set -euo pipefail
+
+      backup_name=\$1
+      if [ -z "\$backup_name" ]; then
+        backup_name='default';
+      fi
+
+      cp --verbose "\$backup_name".disk.qcow2.backup disk.qcow2
+      cp --verbose "\$backup_name".userdata.qcow2.backup userdata.qcow2
+
+      WRAP
+      chmod +x $out/resetToBackup
+
     '';
-  }
+
+  scripts = pkgs.runCommand "scripts"
+    { buildInputs = [ pkgs.stdenv ]; }
+    ''
+      export LANG=C.UTF-8
+      export LC_ALL=C.UTF-8
+
+      mkdir $out
+
+
+    '';
+
+}
