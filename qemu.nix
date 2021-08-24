@@ -7,15 +7,15 @@ let
   user_password = "b";
 in
 rec {
-  #image = pkgs.fetchurl {
-  #  url = "https://cloud-images.ubuntu.com/releases/focal/release-20201102/${img_orig}";
-  #  hash = "sha256-6/jnDBe5WmGy3K+EajY3yZyvQ0itcUcNOnAf0aTFOUY=";
-  #};
-
   image = pkgs.fetchurl {
-    url = "https://cloud-images.ubuntu.com/releases/18.04/release/ubuntu-18.04-server-cloudimg-amd64.img";
-    hash = "sha256-HuEDnwuRyDZzUUE7W19WAmqvMC/V9m8X+CFRMtbpRtI=";
+    url = "https://cloud-images.ubuntu.com/releases/focal/release-20201102/${img_orig}";
+    hash = "sha256-6/jnDBe5WmGy3K+EajY3yZyvQ0itcUcNOnAf0aTFOUY=";
   };
+
+#  image = pkgs.fetchurl {
+#    url = "https://cloud-images.ubuntu.com/releases/18.04/release/ubuntu-18.04-server-cloudimg-amd64.img";
+#    hash = "sha256-HuEDnwuRyDZzUUE7W19WAmqvMC/V9m8X+CFRMtbpRtI=";
+#  };
 
   config = {
     cpus = 16;
@@ -79,7 +79,7 @@ rec {
       -drive "file=$image,format=qcow2"
       -drive "file=$userdata,format=qcow2"
       -enable-kvm
-      -m 15G
+      -m 18G
       -nographic
       -serial mon:stdio
       -smp 8
@@ -116,6 +116,99 @@ rec {
     set -x
     exec ${pkgs.qemu}/bin/qemu-system-x86_64 "''${args[@]}" "$@"
   '';
+
+  vm = pkgs.runCommand "vm" { buildInputs = [ pkgs.qemu ]; }
+    ''
+      # Make some room on the root image
+      cp --reflink=auto "${image}" disk.qcow2
+      chmod +w disk.qcow2
+      qemu-img resize disk.qcow2 +${config.disk}
+      mkdir $out
+      mv disk.qcow2 $out/disk.qcow2
+      ln -s ${userdata} $out/userdata.qcow2
+      cat <<WRAP > $out/runVM
+      #!${pkgs.stdenv.shell}
+      set -euo pipefail
+      if [[ ! -f disk.qcow2 ]]; then
+        # Setup the VM configuration on boot
+        cp --reflink=auto "$out/disk.qcow2" disk.qcow2
+        cp --reflink=auto "$out/userdata.qcow2" userdata.qcow2
+        chmod +w disk.qcow2 userdata.qcow2
+      fi
+      # And finally boot qemu with a bunch of arguments
+      args=(
+        # Share the nix folder with the guest
+        -virtfs "local,security_model=passthrough,id=fsdev0,path=\$PWD,readonly,mount_tag=hostshare"
+      )
+      echo "Starting VM."
+      echo "To login: ubuntu / ubuntu"
+      echo "To quit: type 'Ctrl+a c' then 'quit'"
+      echo "Press enter in a few seconds"
+      exec ${runVM} disk.qcow2 userdata.qcow2 "\''${args[@]}" "\$@"
+      WRAP
+      chmod +x $out/runVM
+
+      #
+      cat <<WRAP > $out/refresh
+      #!${pkgs.stdenv.shell}
+      set -euo pipefail
+
+      rm --force --verbose disk.qcow2 userdata.qcow2
+
+      WRAP
+      chmod +x $out/refresh
+
+      #
+      cat <<WRAP > $out/clean_all
+      #!${pkgs.stdenv.shell}
+        set -euo pipefail
+        rm --force --recursive --verbose \
+        teste.qcow2 \
+        ubuntu-20.04-minimal-cloudimg-amd64.img \
+        user-data.img \
+        disk.qcow2 \
+        teste18.04.qcow2 \
+        userdata.qcow2 \
+        ubuntu-18.04-server-cloudimg-amd64.img \
+        disk.qcow2.backup \
+        userdata.qcow2.backup
+
+      WRAP
+      chmod +x $out/clean_all
+
+      #
+      cat <<WRAP > $out/backupCurrentState
+      #!${pkgs.stdenv.shell}
+      # set -euo pipefail
+
+      backup_name=\$1
+      if [ -z "\$backup_name" ]; then
+        backup_name='default';
+      fi
+
+      cp --verbose disk.qcow2 "\$backup_name".disk.qcow2.backup
+      cp --verbose userdata.qcow2 "\$backup_name".userdata.qcow2.backup
+
+      WRAP
+      chmod +x $out/backupCurrentState
+
+      #
+      cat <<WRAP > $out/resetToBackup
+      #!${pkgs.stdenv.shell}
+      # set -euo pipefail
+
+      backup_name=\$1
+      if [ -z "\$backup_name" ]; then
+        backup_name='default';
+      fi
+
+      cp --verbose "\$backup_name".disk.qcow2.backup disk.qcow2
+      cp --verbose "\$backup_name".userdata.qcow2.backup userdata.qcow2
+
+      WRAP
+      chmod +x $out/resetToBackup
+
+    '';
 
   sshClient = pkgs.writeShellScript "sshVM" ''
     sshKey=$(mktemp)

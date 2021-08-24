@@ -149,12 +149,13 @@ curl -fsSL https://get.docker.com | sudo sh \
 ```
 
 
+
 ### Hard tests:
 
 ```bash
 sudo chown -R ubuntu:kvm /dev/kvm /dev/pts /dev/ptmx
 nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.prepare-l
-nix shell nixpkgs#coreutils --command timeout 60 result/runVML result/runVML
+nix shell nixpkgs#coreutils --command timeout 60 result/runVML
 nix store gc
 nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.prepare
 nix store gc
@@ -198,17 +199,18 @@ groups | rg 'kvm' || echo 'Error'
 cat /sys/module/kvm_intel/parameters/nested | rg 'Y' || echo 'Error'
 modinfo kvm_intel | rg -i nested || echo 'Error'
 egrep --color -i "svm|vmx" /proc/cpuinfo || echo 'Error'
-grep -o 'vmx\|svm' /proc/cpuinfo || echo 'Error'
+rg -o 'vmx\|svm' /proc/cpuinfo || echo 'Error'
 stat --format=%G /dev/kvm | rg 'kvm' || echo 'Error'
-grep -o 'vmx\|svm' /proc/cpuinfo | wc --lines | rg 8 || echo 'Error'
-grep "^Mem" /proc/meminfo || echo 'Error'
+rg -o 'vmx\|svm' /proc/cpuinfo | wc --lines | rg 8 || echo 'Error'
+rg "^Mem" /proc/meminfo || echo 'Error'
 ```
 Adapted from: https://ostechnix.com/how-to-enable-nested-virtualization-in-kvm-in-linux/ e https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/
 grep -o 'vmx\|svm' /proc/cpuinfo
 
 
 ```bash
-sudo su -c "echo 'options kvm_intel nested=1' >> /etc/modprobe.d/kvm.conf"
+sudo su -c "echo 'options kvm_intel nested=1' >> /etc/modprobe.d/kvm.conf" \
+sudo reboot
 ```
 
 Commands to test:
@@ -216,7 +218,7 @@ Commands to test:
 cat /etc/modprobe.d/kvm.conf | grep kvm_
 cat /sys/module/kvm_intel/parameters/nested
 grep -o 'vmx\|svm' /proc/cpuinfo
-grep -o 'vmx\|svm' /proc/cpuinfo | wc --lines | rg 8
+grep -o 'vmx\|svm' /proc/cpuinfo | wc --lines | grep 8
 grep "^Mem" /proc/meminfo
 free -m
 ```
@@ -244,7 +246,30 @@ docker ps --all --quiet | xargs --no-run-if-empty docker stop --time=0 \
 && docker ps --all --quiet | xargs --no-run-if-empty docker rm --force \
 && docker volume rm --force "$NIX_CACHE_VOLUME"
 
+--mount source="$NIX_CACHE_VOLUME",target=/nix \
+
 docker \
+run \
+--device=/dev/kvm \
+--interactive=true \
+--privileged=true \
+--tty=false \
+--rm=true \
+--volume '/sys/fs/cgroup/':'/sys/fs/cgroup':ro \
+docker.nix-community.org/nixpkgs/nix-flakes \
+    <<COMMANDS
+mkdir --parent --mode=755 ~/.config/nix
+echo 'experimental-features = nix-command flakes ca-references ca-derivations' >> ~/.config/nix/nix.conf
+echo begined
+nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.prepare
+echo 1
+timeout 60 result/runVM
+echo 2
+COMMANDS
+```
+
+```bash
+podman \
 run \
 --cap-add=ALL \
 --device=/dev/kvm \
@@ -253,15 +278,15 @@ run \
 --privileged=true \
 --tty=false \
 --rm=true \
---workdir='/code' \
---volume "$(pwd)":'/code' \
 --volume '/sys/fs/cgroup/':'/sys/fs/cgroup':ro \
 docker.nix-community.org/nixpkgs/nix-flakes \
 <<COMMANDS
+mkdir --parent --mode=755 ~/.config/nix
+echo 'experimental-features = nix-command flakes ca-references ca-derivations' >> ~/.config/nix/nix.conf
 echo begined
-nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.prepare
+nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.prepare-l
 echo 1
-timeout 60 result/runVM
+timeout 60 result/runVML
 echo 2
 COMMANDS
 ```
@@ -476,3 +501,429 @@ nixpkgs#home-manager
 
 nix profile install nixpkgs#nixFlakes
 
+
+```
+sudo \
+sed \
+--in-place \
+'s/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="systemd.unified_cgroup_hierarchy=1"/' \
+/etc/default/grub \
+&& sudo grub-mkconfig -o /boot/grub/grub.cfg \
+&& sudo reboot
+```
+
+```bash
+ls -al /sys/fs/cgroup | rg -e 'cgroup.'
+```
+
+```bash
+cat /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/cgroup.subtree_control
+
+sudo mkdir -p /etc/systemd/system/user@.service.d
+sudo cat > /etc/systemd/system/user@.service.d/delegate.conf << EOF
+[Service]
+Delegate=yes
+EOF
+```
+
+
+wget https://github.com/rootless-containers/usernetes/releases/download/v20210708.0/usernetes-x86_64.tbz \
+&& tar xjvf usernetes-x86_64.tbz \
+&& cd usernetes \
+&& ./install.sh --cri=containerd
+
+nix \
+profile \
+install \
+nixpkgs#wget \
+github:ES-Nix/podman-rootless/from-nixpkgs
+
+
+podman \
+stats \
+--cgroup-manager=systemd
+
+
+sudo apt-get install -y systemd
+sudo apt-get update &&
+&& sudo apt-get install -y dbus-user-session
+
+env | rg DBUS_SESSION_BUS_ADDRESS
+systemctl --user status dbus.socket
+
+systemctl --user enable --now dbus.socket
+
+
+lsb_release --all
+uname --all
+
+systemd --version
+https://github.com/rootless-containers/usernetes#requirements
+
+
+podman \
+run \
+--cgroup-manager=cgroupfs \
+--env=PATH=/root/.nix-profile/bin:/usr/bin:/bin \
+--device=/dev/kvm \
+--device=/dev/fuse \
+--env="DISPLAY=${DISPLAY:-:0.0}" \
+--interactive=true \
+--log-level=error \
+--network=host \
+--mount=type=tmpfs,destination=/var/lib/containers \
+--privileged=true \
+--tty=false \
+--rm=true \
+--user=0 \
+--volume=/sys/fs/cgroup:/sys/fs/cgroup:rw \
+docker.nix-community.org/nixpkgs/nix-flakes \
+<<COMMANDS
+mkdir --parent --mode=0755 ~/.config/nix
+echo 'experimental-features = nix-command flakes ca-references ca-derivations' >> ~/.config/nix/nix.conf
+nix \
+profile \
+install \
+github:ES-Nix/podman-rootless/from-nixpkgs \
+&& mkdir --parent --mode=0755 /var/tmp \
+&& podman \
+run \
+--events-backend="file" \
+--storage-driver="vfs" \
+--cgroups=disabled \
+--log-level=error \
+--interactive=true \
+--network=host \
+--tty=true \
+docker.io/library/alpine:3.14.0 \
+sh \
+-c 'apk add --no-cache curl && echo PinP'
+COMMANDS
+
+
+podman \
+run \
+--cgroup-manager=cgroupfs \
+--env=PATH=/root/.nix-profile/bin:/usr/bin:/bin \
+--device=/dev/kvm \
+--device=/dev/fuse \
+--env="DISPLAY=${DISPLAY:-:0.0}" \
+--interactive=true \
+--log-level=error \
+--network=host \
+--mount=type=tmpfs,destination=/var/lib/containers \
+--privileged=true \
+--tty=true \
+--rm=true \
+--user=0 \
+--volume=/sys/fs/cgroup:/sys/fs/cgroup:rw \
+docker.nix-community.org/nixpkgs/nix-flakes
+
+
+
+###
+
+
+### SELinux
+
+
+
+```bash
+sudo systemctl stop apparmor \
+&& sudo apt-get remove -y apparmor \
+&& sudo reboot
+```
+
+
+```bash
+sudo \
+apt-get \
+update \
+&& sudo \
+apt-get \
+install \
+-y \
+policycoreutils \
+selinux-utils \
+selinux-basics \
+&& sudo selinux-activate \
+&& sudo \
+    sed \
+    --in-place \
+    's/^SELINUX=permissive/SELINUX=disabled/' \
+    /etc/selinux/config \
+&& sudo reboot
+```
+
+```bash
+sudo \
+    sed \
+    --in-place \
+    's/^SELINUX=disabled/SELINUX=permissive/' \
+    /etc/selinux/config \
+&& sudo reboot
+```
+
+```bash
+sudo \
+    sed \
+    --in-place \
+    's/^SELINUX=permissive/SELINUX=enforcing/' \
+    /etc/selinux/config \
+&& sudo reboot
+```
+
+```bash
+sed \
+--in-place \
+'s/^SELINUX=enforcing/SELINUX=permissive/' \
+/etc/selinux/config \
+&& reboot
+```
+
+`! stat /etc/selinux/config || cat /etc/selinux/config | grep -e '^SELINUX='`
+
+
+- https://linuxconfig.org/how-to-disable-enable-selinux-on-ubuntu-20-04-focal-fossa-linux
+- https://www.techrepublic.com/article/how-to-install-selinux-on-ubuntu-server-20-04/
+- https://askubuntu.com/a/1304946
+- https://www.golinuxcloud.com/disable-selinux/
+
+
+
+```bash
+echo 'Start instalation!' \
+&& echo 'Start nix stuff...' \
+&& test -d /nix || sudo mkdir --mode=0755 /nix \
+&& sudo chown "$USER": /nix \
+&& SHA256=7c60027233ae556d73592d97c074bc4f3fea451d \
+&& curl -fsSL https://raw.githubusercontent.com/ES-Nix/get-nix/"$SHA256"/get-nix.sh | sh \
+&& . "$HOME"/.nix-profile/etc/profile.d/nix.sh \
+&& . ~/."$(ps -ocomm= -q $$)"rc \
+&& export TMPDIR=/tmp \
+&& export OLD_NIX_PATH="$(readlink -f $(which nix))" \
+&& nix-shell -I nixpkgs=channel:nixos-21.05 --keep OLD_NIX_PATH --packages nixFlakes --run 'nix-env --uninstall $OLD_NIX_PATH && nix-collect-garbage --delete-old && nix profile install nixpkgs#nixFlakes' \
+&& sudo rm -frv /nix/store/*-nix-2.3.* \
+&& unset OLD_NIX_PATH \
+&& nix-collect-garbage --delete-old \
+&& nix store gc \
+&& nix flake --version \
+&& echo 'End nix stuff...' \
+&& echo 'Start kvm stuff...' \
+&& getent group kvm || sudo groupadd kvm \
+&& sudo usermod --append --groups kvm "$USER" \
+&& echo 'End kvm stuff!' \
+&& echo 'Start cgroup v2 instalation...' \
+&& sudo mkdir -p /etc/systemd/system/user@.service.d \
+&& sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo \
+    sed \
+    --in-place \
+    's/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+    /etc/default/grub \
+&& sudo grub-mkconfig -o /boot/grub/grub.cfg \
+&& echo 'End cgroup v2 instalation...' \
+&& echo 'Start docker instalation...' \
+&& curl -fsSL https://get.docker.com | sudo sh \
+&& sudo usermod --append --groups docker "$USER" \
+&& docker --version \
+&& echo 'End docker instalation!' \
+&& sudo apt-get update \
+&& sudo apt-get install -y uidmap \
+&& echo 'Start SELinux instalation!' \
+&& sudo \
+    apt-get \
+    update \
+&& sudo \
+    apt-get \
+    install \
+    -y \
+    policycoreutils \
+    selinux-utils \
+    selinux-basics \
+&& sudo apt-get -y autoremove \
+&& sudo apt-get -y clean  \
+&& sudo rm -rf /var/lib/apt/lists/* \
+&& sudo selinux-activate \
+&& sudo \
+    sed \
+    --in-place \
+    's/^SELINUX=permissive/SELINUX=disabled/' \
+    /etc/selinux/config \
+&& sudo \
+    sed \
+    --in-place \
+    's/^SELINUXTYPE=permissive/SELINUX=disabled/' \
+    /etc/selinux/config \
+&& echo 'End SELinux instalation!' \
+&& nix \
+    profile \
+    install \
+    github:ES-Nix/podman-rootless/from-nixpkgs \
+    nixpkgs#bashInteractive \
+    nixpkgs#conntrack-tools \
+    nixpkgs#coreutils \
+    nixpkgs#file \
+    nixpkgs#findutils \
+    nixpkgs#gnumake \
+    nixpkgs#jq \
+    nixpkgs#minikube \
+    nixpkgs#kubernetes-helm \
+    nixpkgs#python3Full \
+    nixpkgs#python3Full.pkgs.pip \
+    nixpkgs#python3Full.pkgs.setuptools \
+    nixpkgs#python3Full.pkgs.virtualenv \
+    nixpkgs#python3Full.pkgs.wheel \
+    nixpkgs#ripgrep \
+    nixpkgs#strace \
+    nixpkgs#tree \
+    nixpkgs#which \
+&& nix store gc \
+&& sudo reboot
+```
+
+
+
+
+&& echo 'Start kubectl instalation...' \
+&& curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+&& sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl \
+&& echo 'End kubectl instalation!' \
+
+&& echo 'Start minikube instalation...' \
+&& curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
+&& sudo install minikube-linux-amd64 /usr/local/bin/minikube \
+&& echo 'End minikube instalation!' \
+
+```bash
+echo
+cat /sys/fs/cgroup/cgroup.subtree_control | grep -e 'cpu' || echo 'Error'
+cat /sys/fs/cgroup/cgroup.subtree_control | grep -e 'cpuset' || echo 'Error'
+cat /sys/fs/cgroup/cgroup.subtree_control | grep -e 'io' || echo 'Error'
+cat /sys/fs/cgroup/cgroup.subtree_control | grep -e 'memory' || echo 'Error'
+cat /sys/fs/cgroup/cgroup.subtree_control | grep -e 'pids' || echo 'Error'
+echo 
+cat /sys/fs/cgroup/user.slice/cgroup.subtree_control | grep -e 'cpu' || echo 'Error'
+cat /sys/fs/cgroup/user.slice/cgroup.subtree_control | grep -e 'cpuset' || echo 'Error'
+cat /sys/fs/cgroup/user.slice/cgroup.subtree_control | grep -e 'io' || echo 'Error'
+cat /sys/fs/cgroup/user.slice/cgroup.subtree_control | grep -e 'memory' || echo 'Error'
+cat /sys/fs/cgroup/user.slice/cgroup.subtree_control | grep -e 'pids' || echo 'Error'
+echo
+systemctl show user@$(id -u).service | rg Accounting
+systemctl show user@$(id -u).service | rg Delegate
+echo 
+mount -l | grep cgroup2 | grep -e 'type cgroup2' || echo 'Error'
+ls -al /sys/fs/cgroup | grep -e 'cgroup.'
+! stat /etc/default/grub || cat /etc/default/grub | grep -e 'systemd.unified_cgroup_hierarchy=1'
+! stat /etc/default/grub || cat /etc/default/grub | grep -e 'cgroup_no_v1=all'
+cat /etc/group | rg -e 'kvm:'
+ls -al /sys/fs/cgroup | rg -e 'cgroup.'
+cat /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/cgroup.subtree_control | rg -e 'memory' || echo 'Error'
+cat /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/cgroup.subtree_control | rg -e 'pids' || echo 'Error'
+groups | rg 'kvm' || echo 'Error'
+stat --format=%G /dev/kvm | rg 'kvm' || echo 'Error'
+cat /sys/module/kvm_intel/parameters/nested | rg 'Y' || echo 'Error'
+modinfo kvm_intel | rg -i nested || echo 'Error'
+rg -o 'vmx|svm' /proc/cpuinfo | wc --lines | rg 8 || echo 'Error'
+rg "^Mem" /proc/meminfo || echo 'Error'
+systemctl --user status dbus.socket | rg active
+cat /proc/cmdline
+```
+
+
+```bash
+podman \
+run \
+--interactive=true \
+--memory-reservation=200m \
+--memory=300m \
+--memory-swap=300m \
+--rm=true \
+--tty=true \
+docker.io/library/alpine:3.14.0 \
+echo \
+'Hi!'
+```
+
+nix build github:ES-Nix/poetry2nix-examples/2cb6663e145bbf8bf270f2f45c869d69c657fef2#poetry2nixOCIImage
+
+
+```bash
+minikube start \
+&& kubectl create deployment hello-minikube --image=k8s.gcr.io/echoserver:1.4 \
+&& kubectl expose deployment hello-minikube --type=NodePort --port=8080 \
+&& sleep 5 \
+&& kubectl get services hello-minikube
+```
+
+alias kubectl='minikube kubectl'
+alias k='minikube kubectl'
+
+```bash
+kubectl exec name -- command
+``` 
+
+
+
+https://www.baeldung.com/ops/kubernetes-helm#developing_first_chart
+
+```
+minikube start
+helm create hello-world
+
+helm install hello-world ./hello-world
+
+kubectl get pods
+
+helm ls --all | rg hello-world
+
+helm upgrade hello-world ./hello-world
+
+helm delete hello-world
+```
+
+
+nix profile install nixpkgs#docker
+
+```bash
+podman system service --time=0 unix://tmp/podman.sock &
+```
+
+
+```bash
+docker \
+--host=unix:///tmp/podman.sock \
+run \
+--interactive=true \
+--tty=true \
+--rm=true \
+docker.io/library/alpine:3.14.0 \
+echo 'Hello!'
+```
+
+Does not work:
+```bash
+sudo mkdir -p /etc/sysconfig
+sudo sh -c 'echo DOCKER_OPTS=\"-H unix:///tmp/podman.sock -H tcp://172.17.0.1:2375\" >> /etc/sysconfig/docker'
+```
+
+podman system service --time=0 unix://var/run/docker.sock &
+echo "$(which docker)"
+sudo rm -r /etc/sysconfig/docker
+
+#### Refs
+
+- https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
+- https://minikube.sigs.k8s.io/docs/start/  
+
+
+- https://github.com/rootless-containers/usernetes/tree/097d99e78e7a026093cad0057e0065ce407a94a4#enable-cpu-controller
+- https://rootlesscontaine.rs/getting-started/common/cgroup2/#checking-whether-cgroup-v2-is-already-enabled
+- https://github.com/containers/podman/issues/6365#issuecomment-719550618
+- https://docs.docker.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities
+- https://serverfault.com/a/885689
+- https://stackoverflow.com/a/68026463
+- https://mbien.dev/blog/tags/debian
+- https://stackoverflow.com/a/66827343
+- 
