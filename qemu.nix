@@ -79,10 +79,10 @@ rec {
       -drive "file=$image,format=qcow2"
       -drive "file=$userdata,format=qcow2"
       -enable-kvm
-      -m 18G
+      -m 8G
       -nographic
       -serial mon:stdio
-      -smp 8
+      -smp 4
       -device "rtl8139,netdev=net0"
       -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:22"
       -cpu Haswell-noTSX-IBRS,vmx=on
@@ -122,10 +122,15 @@ rec {
       # Make some room on the root image
       cp --reflink=auto "${image}" disk.qcow2
       chmod +w disk.qcow2
+
       qemu-img resize disk.qcow2 +${config.disk}
+
       mkdir $out
+
       mv disk.qcow2 $out/disk.qcow2
+
       ln -s ${userdata} $out/userdata.qcow2
+
       cat <<WRAP > $out/runVM
       #!${pkgs.stdenv.shell}
       set -euo pipefail
