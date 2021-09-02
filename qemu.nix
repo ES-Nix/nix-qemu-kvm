@@ -99,7 +99,7 @@ rec {
     )
 
     set -x
-    exec ${pkgs.qemu}/bin/qemu-system-x86_64 "''${args[@]}" "$@"
+    exec ${pkgs.qemu}/bin/qemu-system-x86_64 "''${args[@]}" "$@" >/dev/null 2>&1
   '';
 
   runVML = pkgs.writeShellScript "runVML" ''
