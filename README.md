@@ -688,7 +688,12 @@ sed \
 - https://www.techrepublic.com/article/how-to-install-selinux-on-ubuntu-server-20-04/
 - https://askubuntu.com/a/1304946
 - https://www.golinuxcloud.com/disable-selinux/
-
+- https://howto.lintel.in/enable-disable-selinux-centos/
+- https://newbedev.com/selinux-corrupted-now-unable-to-boot-centos-7-with-selinux-enabled
+- https://access.redhat.com/discussions/3536621
+- https://serverfault.com/questions/824975/failed-to-get-d-bus-connection-operation-not-permitted
+- https://serverfault.com/questions/936985/cannot-use-systemctl-user-due-to-failed-to-get-d-bus-connection-permission
+- https://man7.org/linux/man-pages/man5/selinux_config.5.html   
 
 
 ```bash
@@ -782,7 +787,6 @@ echo 'Start instalation!' \
 && nix store gc \
 && sudo reboot
 ```
-
 
 
 

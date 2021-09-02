@@ -1,13 +1,20 @@
 { pkgs ?  import <nixpkgs> {} }:
 let
-  img_orig = "ubuntu-20.04-server-cloudimg-amd64.img";
+  img_orig = "ubuntu-21.04-server-cloudimg-amd64.img";
+  img_orig-20-04 = "ubuntu-20.04-server-cloudimg-amd64.img";
 
   # It is NOT working!
   user_name = "ubuntu";
   user_password = "b";
 in
 rec {
+
   image = pkgs.fetchurl {
+    url = "https://cloud-images.ubuntu.com/releases/hirsute/release-20210817/${img_orig}";
+    hash = "sha256-q6v8JQ0RIG93mHa42s/o2/u+y6Q2UKGWJiQCQnZA29M=";
+  };
+
+  image-20-04 = pkgs.fetchurl {
     url = "https://cloud-images.ubuntu.com/releases/focal/release-20201102/${img_orig}";
     hash = "sha256-6/jnDBe5WmGy3K+EajY3yZyvQ0itcUcNOnAf0aTFOUY=";
   };
@@ -47,8 +54,10 @@ rec {
 #        sudo = "${toString "ALL=(ALL) NOPASSWD:ALL"}";
 #    };
 
+    # Source of magic number msize=262144
+    # https://askubuntu.com/questions/548208/sharing-folder-with-vm-through-libvirt-9p-permission-denied/1259833#1259833
     mounts = [
-      [ "hostshare" "/mnt" "9p" "defaults,trans=virtio,version=9p2000.L" ]
+      [ "hostshare" "/code" "9p" "defaults,trans=virtio,access=any,version=9p2000.L,cache=none,msize=262144,rw" ]
     ];
   };
 
@@ -143,7 +152,29 @@ rec {
       # And finally boot qemu with a bunch of arguments
       args=(
         # Share the nix folder with the guest
-        -virtfs "local,security_model=passthrough,id=fsdev0,path=\$PWD,readonly,mount_tag=hostshare"
+        -virtfs "local,security_model=none,id=fsdev0,path=\$PWD,readonly=off,mount_tag=hostshare"
+      )
+      echo "Starting VM."
+      echo "To login: ubuntu / ubuntu"
+      echo "To quit: type 'Ctrl+a c' then 'quit'"
+      echo "Press enter in a few seconds"
+      exec ${runVML} disk.qcow2 userdata.qcow2 "\''${args[@]}" "\$@"
+      WRAP
+      chmod +x $out/runVM
+
+      cat <<WRAP > $out/run-vm-kvm
+      #!${pkgs.stdenv.shell}
+      set -euo pipefail
+      if [[ ! -f disk.qcow2 ]]; then
+        # Setup the VM configuration on boot
+        cp --reflink=auto "$out/disk.qcow2" disk.qcow2
+        cp --reflink=auto "$out/userdata.qcow2" userdata.qcow2
+        chmod +w disk.qcow2 userdata.qcow2
+      fi
+      # And finally boot qemu with a bunch of arguments
+      args=(
+        # Share the nix folder with the guest
+        -virtfs "local,security_model=none,id=fsdev0,path=\$PWD,readonly=off,mount_tag=hostshare"
       )
       echo "Starting VM."
       echo "To login: ubuntu / ubuntu"
@@ -151,7 +182,7 @@ rec {
       echo "Press enter in a few seconds"
       exec ${runVM} disk.qcow2 userdata.qcow2 "\''${args[@]}" "\$@"
       WRAP
-      chmod +x $out/runVM
+      chmod +x $out/run-vm-kvm
 
       #
       cat <<WRAP > $out/refresh
@@ -213,6 +244,8 @@ rec {
       WRAP
       chmod +x $out/resetToBackup
 
+      cp --verbose ${sshClient} $out/ssh-vm
+      chmod +x $out/ssh-vm
     '';
 
   sshClient = pkgs.writeShellScript "sshVM" ''
@@ -220,7 +253,18 @@ rec {
     trap 'rm $sshKey' EXIT
     cp ${./vagrant} "$sshKey"
     chmod 0600 "$sshKey"
-    ssh -i "$sshKey" ${user_name}@127.0.0.1 -p 10022 "$@"
+
+    until ${pkgs.openssh}/bin/ssh \
+      -X \
+      -o GlobalKnownHostsFile=/dev/null \
+      -o UserKnownHostsFile=/dev/null \
+      -o StrictHostKeyChecking=no \
+      -o LogLevel=ERROR \
+      -i "$sshKey" ${user_name}@127.0.0.1 -p 10022 "$@"; do
+      ((c++)) && ((c==60)) && break
+      sleep 1
+    done
+
   '';
 
   # Prepare the VM snapshot for faster resume.
