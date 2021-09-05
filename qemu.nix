@@ -246,10 +246,10 @@ rec {
       # cp --verbose "\$backup_name".disk.qcow2.backup disk.qcow2
       # cp --verbose "\$backup_name".userdata.qcow2.backup userdata.qcow2
 
-      echo 'Start backup...'
+      echo 'Start reset to backup...'
       dd if="\$backup_name".disk.qcow2.backup of=disk.qcow2 iflag=direct oflag=direct bs=4M conv=sparse
       dd if="\$backup_name".userdata.qcow2.backup of=userdata.qcow2 iflag=direct oflag=direct bs=4M conv=sparse
-      echo 'End backup...'
+      echo 'End reset to backup...'
 
       WRAP
       chmod +x $out/resetToBackup
