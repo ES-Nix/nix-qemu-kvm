@@ -217,6 +217,129 @@ The following NEW packages will be installed:
   libprotobuf-c1 libprotobuf23 libyajl2 podman podman-machine-cni podman-plugins python3-protobuf slirp4netns uidmap
 ```
 
+```bash
+ssh-vm
+```
+
+Point to inject stuff:
+```bash
+result/resetToBackup from-apt-podman-from-nix-minikube-helm-kubectl \
+&& (result/run-vm-kvm < /dev/null &) \
+&& { result/ssh-vm << COMMANDS
+podman --version
+COMMANDS
+}
+```
+
+
+### WIP
+
+```bash
+kill -9 $(pidof qemu-system-x86_64) || true \
+&& result/resetToBackup nix-flake \
+&& (result/run-vm-kvm < /dev/null &) \
+&& { result/ssh-vm << COMMANDS
+echo 'Start kvm stuff...' \
+&& getent group kvm || sudo groupadd kvm \
+&& sudo usermod --append --groups kvm "\$USER" \
+&& echo 'End kvm stuff!' \
+&& echo 'Start cgroup v2 instalation...' \
+&& sudo mkdir -p /etc/systemd/system/user@.service.d \
+&& sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo \
+    sed \
+    --in-place \
+    's/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+    /etc/default/grub \
+&& sudo grub-mkconfig -o /boot/grub/grub.cfg \
+&& echo 'End cgroup v2 instalation...' \
+&& echo 'Start dbus stuff...' \
+&& sudo apt-get update \
+&& sudo apt-get install -y dbus-user-session \
+&& echo 'End dbus stuff...' \
+&& echo 'Start uidmap instalation!' \
+&& sudo apt-get update \
+&& sudo apt-get install -y uidmap \
+&& echo 'End uidmap instalation!' \
+&& echo 'Start SELinux instalation!' \
+&& sudo \
+    apt-get \
+    update \
+&& sudo \
+    apt-get \
+    install \
+    -y \
+    policycoreutils \
+    selinux-utils \
+    selinux-basics \
+&& sudo apt-get -y autoremove \
+&& sudo apt-get -y clean  \
+&& sudo rm -rf /var/lib/apt/lists/* \
+&& sudo selinux-activate \
+&& sudo \
+    sed \
+    --in-place \
+    's/^SELINUX=permissive/SELINUX=disabled/' \
+    /etc/selinux/config \
+&& echo 'End SELinux instalation!' \
+&& nix \
+    profile \
+    install \
+    github:ES-Nix/podman-rootless/from-nixpkgs \
+    nixpkgs#bashInteractive \
+    nixpkgs#cni \
+    nixpkgs#cni-plugins \
+    nixpkgs#conntrack-tools \
+    nixpkgs#cri-o \
+    nixpkgs#file \
+    nixpkgs#findutils \
+    nixpkgs#gnumake \
+    nixpkgs#jq \
+    nixpkgs#kubernetes-helm \
+    nixpkgs#minikube \
+    nixpkgs#ripgrep \
+    nixpkgs#slirp4netns \
+    nixpkgs#strace \
+    nixpkgs#tree \
+    nixpkgs#which \
+&& sudo ln -fsv /home/ubuntu/.nix-profile/bin/podman /usr/bin/podman \
+&& sudo mkdir -p /usr/lib/cni \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/portmap /usr/lib/cni/portmap \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/firewall /usr/lib/cni/firewall \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/tuning /usr/lib/cni/tuning \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/bridge /usr/lib/cni/bridge \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cri-o)"/bin/crio /usr/lib/crio \
+&& echo 'Start bypass sudo podman stuff...' \
+&& sudo \
+--preserve-env \
+su \
+-c \
+"echo \$USER ALL=\(ALL\) NOPASSWD:SETENV: \$(readlink \$(which podman)) >> /etc/sudoers" \
+&& echo 'End bypass sudo podman stuff...' \
+&& nix store gc \
+&& sudo reboot
+COMMANDS
+} && result/backupCurrentState wip-01 \
+&& echo 'End of backup wip-01' \
+&& kill -9 $(pidof qemu-system-x86_64) \
+&& result/refresh \
+&& result/resetToBackup wip-01 \
+&& (result/run-vm-kvm < /dev/null &) \
+&& { result/ssh-vm << COMMANDS
+minikube start --driver=podman
+COMMANDS
+} && kill -9 $(pidof qemu-system-x86_64) \
+&& result/refresh \
+&& result/resetToBackup wip-01 \
+&& (result/run-vm-kvm < /dev/null &) \
+&& { result/ssh-vm << COMMANDS
+minikube start --driver=podman --container-runtime=cri-o
+COMMANDS
+}
+```
+
+
 ### Magic boilerplate
 
 ```bash
