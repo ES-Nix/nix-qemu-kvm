@@ -49,6 +49,100 @@ COMMANDS
         && (result/run-vm-kvm < /dev/null &) \
         && result/ssh-vm
       }
+
+      ssh-vm() {
+        kill -9 $(pidof qemu-system-x86_64) 1>/dev/null 2>/dev/null || true \
+        && test -d result || nix build .#qemu.vm \
+        && (result/run-vm-kvm < /dev/null &) \
+        && result/ssh-vm
+      }
+
+      start-minikube() {
+        (result/run-vm-kvm < /dev/null &) \
+        && { result/ssh-vm << COMMANDS
+        test -d /home/ubuntu/my-volume || mkdir -p /home/ubuntu/my-volume
+        minikube start --mount --mount-string="/home/ubuntu/my-volume:/minikube-container/some-path"
+COMMANDS
+        }
+      }
+
+      generic-state-tester() {
+
+        backup_name=$1
+        if [ -z "$backup_name" ]; then
+          backup_name='default';
+        fi
+
+
+        minikube_function=$2
+        if [ -z "$minikube_function" ]; then
+          minikube_function='start-minikube';
+        fi
+
+        kill -9 $(pidof qemu-system-x86_64) || true \
+        && result/resetToBackup "$backup_name" \
+        && (result/run-vm-kvm < /dev/null &) \
+        && ($minikube_function) \
+        && { result/ssh-vm << COMMANDS
+        minikube kubectl -- delete pod test-pod-volume
+        rm -fv pod-volume.yaml.yaml
+        rm -frv /home/ubuntu/from-container
+
+        cd /home/ubuntu/my-volume
+        cat << EOF > pod-volume.yaml
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: test-pod-volume
+        spec:
+          containers:
+          - name: test-pod-volume
+            image: busybox
+            command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
+            volumeMounts:
+            - name: all-in-one
+              mountPath: "/home"
+              readOnly: false
+          volumes:
+          - name: all-in-one
+            hostPath:
+              # directory location on host
+              path: /minikube-container/some-path
+              # this field is optional
+              type: DirectoryOrCreate
+        EOF
+
+        minikube kubectl -- create -f pod-volume.yaml | grep -e 'ContainerCreating' || echo 'Error'
+        minikube kubectl -- get pods | grep -e 'ContainerCreating' || echo 'Error'
+
+        until minikube kubectl -- get pods | grep -e 'Running'
+        do
+            echo "Waiting for minikube kubectl -- get pods outputs Running"
+            sleep 1
+        done
+        minikube kubectl -- get pods
+
+        minikube kubectl exec test-pod-volume -- -t -- /bin/sh -c 'touch /home/from-container && ls -ahl /home/from-container'
+        ls -ahl /home/ubuntu/my-volume/from-container
+
+        minikube kubectl -- delete pod test-pod-volume
+        rm -fv pod-volume.yaml.yaml
+        rm -frv /home/ubuntu/my-volume/from-container
+COMMANDS
+        } && { result/ssh-vm << COMMANDS
+        helm create hello-world
+
+        helm install hello-world ./hello-world
+
+        kubectl get pods
+
+        helm ls --all | grep hello-world
+
+        helm delete hello-world
+
+COMMANDS
+        }
+      }
     '';
   };
 in mkShell {

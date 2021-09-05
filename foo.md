@@ -153,12 +153,12 @@ COMMANDS
 }
 ```
 
+
 ### Only podman from apt
 
-
 ```bash
-kill -9 $(pidof qemu-system-x86_64) || true \
-&& result/refresh || nix build .#qemu.vm \
+create-nix-flake-backup \
+&& kill -9 $(pidof qemu-system-x86_64) || true \
 && result/resetToBackup nix-flake \
 && (result/run-vm-kvm < /dev/null &) \
 && { result/ssh-vm << COMMANDS
@@ -230,5 +230,5 @@ COMMANDS
 ```
 
 
- 1>/dev/null 2>/dev/null
+
  
