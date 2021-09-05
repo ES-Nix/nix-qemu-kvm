@@ -696,25 +696,9 @@ sed \
 - https://man7.org/linux/man-pages/man5/selinux_config.5.html   
 
 
+
 ```bash
-echo 'Start instalation!' \
-&& echo 'Start nix stuff...' \
-&& test -d /nix || sudo mkdir --mode=0755 /nix \
-&& sudo chown "$USER": /nix \
-&& SHA256=7c60027233ae556d73592d97c074bc4f3fea451d \
-&& curl -fsSL https://raw.githubusercontent.com/ES-Nix/get-nix/"$SHA256"/get-nix.sh | sh \
-&& . "$HOME"/.nix-profile/etc/profile.d/nix.sh \
-&& . ~/."$(ps -ocomm= -q $$)"rc \
-&& export TMPDIR=/tmp \
-&& export OLD_NIX_PATH="$(readlink -f $(which nix))" \
-&& nix-shell -I nixpkgs=channel:nixos-21.05 --keep OLD_NIX_PATH --packages nixFlakes --run 'nix-env --uninstall $OLD_NIX_PATH && nix-collect-garbage --delete-old && nix profile install nixpkgs#nixFlakes' \
-&& sudo rm -frv /nix/store/*-nix-2.3.* \
-&& unset OLD_NIX_PATH \
-&& nix-collect-garbage --delete-old \
-&& nix store gc \
-&& nix flake --version \
-&& echo 'End nix stuff...' \
-&& echo 'Start kvm stuff...' \
+echo 'Start kvm stuff...' \
 && getent group kvm || sudo groupadd kvm \
 && sudo usermod --append --groups kvm "$USER" \
 && echo 'End kvm stuff!' \
@@ -729,13 +713,14 @@ echo 'Start instalation!' \
     /etc/default/grub \
 && sudo grub-mkconfig -o /boot/grub/grub.cfg \
 && echo 'End cgroup v2 instalation...' \
-&& echo 'Start docker instalation...' \
-&& curl -fsSL https://get.docker.com | sudo sh \
-&& sudo usermod --append --groups docker "$USER" \
-&& docker --version \
-&& echo 'End docker instalation!' \
+&& echo 'Start dbus stuff...' \
+&& sudo apt-get update \
+&& sudo apt-get install -y dbus-user-session \
+&& echo 'End dbus stuff...' \
+&& echo 'Start uidmap instalation!' \
 && sudo apt-get update \
 && sudo apt-get install -y uidmap \
+&& echo 'End uidmap instalation!' \
 && echo 'Start SELinux instalation!' \
 && sudo \
     apt-get \
@@ -756,11 +741,6 @@ echo 'Start instalation!' \
     --in-place \
     's/^SELINUX=permissive/SELINUX=disabled/' \
     /etc/selinux/config \
-&& sudo \
-    sed \
-    --in-place \
-    's/^SELINUXTYPE=permissive/SELINUX=disabled/' \
-    /etc/selinux/config \
 && echo 'End SELinux instalation!' \
 && nix \
     profile \
@@ -775,11 +755,6 @@ echo 'Start instalation!' \
     nixpkgs#jq \
     nixpkgs#minikube \
     nixpkgs#kubernetes-helm \
-    nixpkgs#python3Full \
-    nixpkgs#python3Full.pkgs.pip \
-    nixpkgs#python3Full.pkgs.setuptools \
-    nixpkgs#python3Full.pkgs.virtualenv \
-    nixpkgs#python3Full.pkgs.wheel \
     nixpkgs#ripgrep \
     nixpkgs#strace \
     nixpkgs#tree \
@@ -788,17 +763,185 @@ echo 'Start instalation!' \
 && sudo reboot
 ```
 
+```bash
+result/ssh-vm << COMMANDS
+test -d /nix || sudo mkdir --mode=0755 /nix \
+&& sudo chown "\$USER": /nix \
+&& SHA256=eccef9a426fd8d7fa4c7e4a8c1191ba1cd00a4f7 \
+&& curl -fsSL https://raw.githubusercontent.com/ES-Nix/get-nix/"\$SHA256"/get-nix.sh | sh \
+&& . "\$HOME"/.nix-profile/etc/profile.d/nix.sh \
+&& . ~/."\$(ps -ocomm= -q \$$)"rc \
+&& export TMPDIR=/tmp \
+&& export OLD_NIX_PATH="\$(readlink -f \$(which nix))" \
+&& nix-shell -I nixpkgs=channel:nixos-21.05 --keep OLD_NIX_PATH --packages nixFlakes --run 'nix-env --uninstall \$OLD_NIX_PATH && nix-collect-garbage --delete-old && nix profile install nixpkgs#nixFlakes' \
+&& sudo rm -frv /nix/store/*-nix-2.3.* \
+&& unset OLD_NIX_PATH \
+&& nix-collect-garbage --delete-old \
+&& nix store gc \
+&& nix flake --version
+COMMANDS
+```
+
+```bash
+{ result/ssh-vm << COMMANDS
+date
+echo '#1'
+COMMANDS
+} && { result/ssh-vm << COMMANDS
+date
+echo '#2'
+COMMANDS
+} && result/ssh-vm << COMMANDS
+date
+echo '#3'
+COMMANDS
+```
 
 
-&& echo 'Start kubectl instalation...' \
-&& curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
-&& sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl \
-&& echo 'End kubectl instalation!' \
 
-&& echo 'Start minikube instalation...' \
-&& curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
-&& sudo install minikube-linux-amd64 /usr/local/bin/minikube \
-&& echo 'End minikube instalation!' \
+```bash
+minikube start --driver=podman --container-runtime=cri-o
+```
+
+```bash
+kill -9 $(pidof qemu-system-x86_64) || true \
+&& result/refresh || nix build .#qemu.vm \
+&& (result/run-vm-kvm < /dev/null &) \
+&& { result/ssh-vm << COMMANDS
+test -d /nix || sudo mkdir --mode=0755 /nix \
+&& sudo chown "\$USER": /nix \
+&& SHA256=eccef9a426fd8d7fa4c7e4a8c1191ba1cd00a4f7 \
+&& curl -fsSL https://raw.githubusercontent.com/ES-Nix/get-nix/"\$SHA256"/get-nix.sh | sh \
+&& . "\$HOME"/.nix-profile/etc/profile.d/nix.sh \
+&& . ~/."\$(ps -ocomm= -q \$\$)"rc \
+&& export TMPDIR=/tmp \
+&& export OLD_NIX_PATH="\$(readlink -f \$(which nix))" \
+&& nix-shell -I nixpkgs=channel:nixos-21.05 --keep OLD_NIX_PATH --packages nixFlakes --run 'nix-env --uninstall \$OLD_NIX_PATH && nix-collect-garbage --delete-old && nix profile install nixpkgs#nixFlakes' \
+&& sudo rm -frv /nix/store/*-nix-2.3.* \
+&& unset OLD_NIX_PATH \
+&& nix-collect-garbage --delete-old \
+&& nix store gc \
+&& nix flake --version
+COMMANDS
+} && result/backupCurrentState nix-flake \
+&& { result/ssh-vm << COMMANDS
+echo 'Start kvm stuff...' \
+&& getent group kvm || sudo groupadd kvm \
+&& sudo usermod --append --groups kvm "\$USER" \
+&& echo 'End kvm stuff!' \
+&& echo 'Start cgroup v2 instalation...' \
+&& sudo mkdir -p /etc/systemd/system/user@.service.d \
+&& sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo \
+    sed \
+    --in-place \
+    's/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+    /etc/default/grub \
+&& sudo grub-mkconfig -o /boot/grub/grub.cfg \
+&& echo 'End cgroup v2 instalation...' \
+&& echo 'Start dbus stuff...' \
+&& sudo apt-get update \
+&& sudo apt-get install -y dbus-user-session \
+&& echo 'End dbus stuff...' \
+&& echo 'Start uidmap instalation!' \
+&& sudo apt-get update \
+&& sudo apt-get install -y uidmap \
+&& echo 'End uidmap instalation!' \
+&& echo 'Start SELinux instalation!' \
+&& sudo \
+    apt-get \
+    update \
+&& sudo \
+    apt-get \
+    install \
+    -y \
+    policycoreutils \
+    selinux-utils \
+    selinux-basics \
+&& sudo apt-get -y autoremove \
+&& sudo apt-get -y clean  \
+&& sudo rm -rf /var/lib/apt/lists/* \
+&& sudo selinux-activate \
+&& sudo \
+    sed \
+    --in-place \
+    's/^SELINUX=permissive/SELINUX=disabled/' \
+    /etc/selinux/config \
+&& echo 'End SELinux instalation!' \
+&& nix \
+    profile \
+    install \
+    github:ES-Nix/podman-rootless/from-nixpkgs \
+    nixpkgs#bashInteractive \
+    nixpkgs#cni \
+    nixpkgs#cni-plugins \
+    nixpkgs#conntrack-tools \
+    nixpkgs#cri-o \
+    nixpkgs#file \
+    nixpkgs#findutils \
+    nixpkgs#gnumake \
+    nixpkgs#jq \
+    nixpkgs#kubernetes-helm \
+    nixpkgs#minikube \
+    nixpkgs#ripgrep \
+    nixpkgs#slirp4netns \
+    nixpkgs#strace \
+    nixpkgs#tree \
+    nixpkgs#which \
+&& sudo ln -fsv /home/ubuntu/.nix-profile/bin/podman /usr/bin/podman \
+&& sudo mkdir -p /usr/lib/cni \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/portmap /usr/lib/cni/portmap \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/firewall /usr/lib/cni/firewall \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/tuning /usr/lib/cni/tuning \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/bridge /usr/lib/cni/bridge \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cri-o)"/bin/crio /usr/lib/crio \
+&& echo 'Start bypass sudo podman stuff...' \
+&& sudo \
+--preserve-env \
+su \
+-c \
+"echo \$USER ALL=\(ALL\) NOPASSWD:SETENV: \$(readlink \$(which podman)) >> /etc/sudoers" \
+&& echo 'End bypass sudo podman stuff...' \
+&& nix store gc \
+&& sudo reboot
+COMMANDS
+} && result/backupCurrentState wip-01 \
+&& echo 'End of backup wip-01' \
+&& kill -9 $(pidof qemu-system-x86_64) \
+&& result/refresh \
+&& result/resetToBackup wip-01 \
+&& (result/run-vm-kvm < /dev/null &) \
+&& { result/ssh-vm << COMMANDS
+minikube start --driver=podman
+COMMANDS
+} && kill -9 $(pidof qemu-system-x86_64) \
+&& result/refresh \
+&& result/resetToBackup wip-01 \
+&& (result/run-vm-kvm < /dev/null &) \
+&& { result/ssh-vm << COMMANDS
+minikube start --driver=podman --container-runtime=cri-o
+COMMANDS
+}
+```
+
+
+
+```bash
+&& echo 'Start docker instalation...' \
+&& curl -fsSL https://get.docker.com | sudo sh \
+&& sudo usermod --append --groups docker "$USER" \
+&& docker --version \
+&& echo 'End docker instalation!' \
+```
+
+```bash
+    nixpkgs#python3Full \
+    nixpkgs#python3Full.pkgs.pip \
+    nixpkgs#python3Full.pkgs.setuptools \
+    nixpkgs#python3Full.pkgs.virtualenv \
+    nixpkgs#python3Full.pkgs.wheel \
+```
 
 ```bash
 echo
@@ -872,7 +1015,8 @@ kubectl exec name -- command
 
 https://www.baeldung.com/ops/kubernetes-helm#developing_first_chart
 
-```
+```bash
+alias kubectl='minikube kubectl'
 minikube start
 helm create hello-world
 
@@ -887,6 +1031,448 @@ helm upgrade hello-world ./hello-world
 helm delete hello-world
 ```
 
+
+kubectl get pods
+minikube kubectl -- apply -f pod.yalm 
+kubectl get pods
+
+minikube kubectl exec -- -it test-subpath-hostpath bash
+kubectl exec -- --stdin --tty test-subpath-hostpath -- /bin/bash -c 'ls -al'
+
+minikube kubectl -- delete -f pod.yalm
+
+
+
+kubectl apply -- -f https://k8s.io/examples/application/shell-demo.yaml
+kubectl get pod shell-demo
+
+minikube kubectl -- delete shell-demo 
+
+kubectl exec -- --stdin --tty shell-demo -- /bin/bash -c 'ls -al /'
+kubectl exec -- --stdin --tty shell-demo -- /bin/bash -c 'touch /usr/share/nginx/html/foo.txt'
+
+```bash
+cat << EOF > pod.yalm                                                           
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shell-demo
+spec:
+  volumes:
+  - name: shared-data
+    emptyDir: {}
+  containers:
+  - name: nginx
+    image: nginx
+    volumeMounts:
+    - name: shared-data
+      mountPath: /data
+  volumes:
+  - hostPath:
+      path: /data
+      type: Directory
+    name: shared-data      
+  hostNetwork: true
+  dnsPolicy: Default
+EOF
+      
+kubectl apply -- -f pod.yalm
+
+sleep 5
+kubectl get pods
+kubectl exec -- --stdin --tty shell-demo -- /bin/bash -c 'ls -al /data'
+
+minikube kubectl -- delete -f pod.yalm
+```
+
+```bash
+cat << EOF > pod-test-subpath-hostpath.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-subpath-hostpath
+  labels:
+    app: test-subpath-hostpath
+spec:
+  containers:
+  - name: nginx
+    image: ubuntu
+    command:
+        - sleep
+        - "3600"
+    volumeMounts:
+    - name: data
+      mountPath: /data
+  volumes:
+  - hostPath:
+      path: /data/disk0
+      type: Directory
+    name: data
+EOF
+
+kubectl apply -- -f pod-test-subpath-hostpath.yaml
+kubectl get pods
+kubectl exec -- --stdin --tty test-subpath-hostpath -- /bin/bash -c 'ls -al /data'
+
+minikube kubectl -- delete pod test-subpath-hostpath
+rm -fv pod-test-subpath-hostpath.yaml
+```
+
+```bash
+cat << EOF > myVolumes-Pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myvolumes-pod
+spec:
+  containers:
+  - image: alpine
+    imagePullPolicy: IfNotPresent
+    name: myvolumes-container
+    
+    command: [    'sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
+    
+    volumeMounts:
+    - mountPath: /home/ubuntu/volume-test/
+      name: demo-volume
+  volumes:
+  - name: demo-volume
+    hostPath:
+      # directory location on host
+      path: /home/ubuntu/volume-test/
+EOF
+      
+kubectl create -- -f myVolumes-Pod.yaml
+kubectl get pods
+kubectl exec myvolumes-pod -- -i -t -- /bin/sh -c 'echo text-abc > /demo/textfile.txt'
+
+minikube kubectl -- delete pod myvolumes-pod
+rm -fv myVolumes-Pod.yaml
+```
+
+
+```bash
+cat << EOF > example-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pd
+spec:
+  containers:
+  - image: alpine
+    imagePullPolicy: IfNotPresent
+    name: volume-container    
+    command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
+
+    volumeMounts:
+    - mountPath: /code
+      name: test-volume
+  volumes:
+  - name: test-volume
+    hostPath:
+      # directory location on host
+      path: /home/ubuntu/volume-test
+      # this field is optional
+      type: Directory
+EOF
+      
+kubectl create -- -f example-pod.yaml
+kubectl get pods
+kubectl exec volume-container -- -i -t -- /bin/sh -c 'echo text-abc > demo/textfile'
+
+minikube kubectl -- delete pod test-pd
+rm -fv example-pod.yaml
+```
+
+
+my-lamp-site
+
+```bash
+cat << EOF > my-lamp-site.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-lamp-site
+spec:
+    containers:
+    - name: mysql
+      image: mysql
+      env:
+      - name: MYSQL_ROOT_PASSWORD
+        value: "rootpasswd"
+      volumeMounts:
+      - mountPath: /var/lib/mysql
+        name: site-data
+        subPath: mysql
+    - name: php
+      image: php:7.0-apache
+      volumeMounts:
+      - mountPath: /var/www/html
+        name: site-data
+        subPath: html
+    volumes:
+    - name: site-data
+      persistentVolumeClaim:
+        claimName: my-lamp-site-data
+EOF
+      
+kubectl create -- -f my-lamp-site.yaml
+
+kubectl get pods
+
+kubectl exec my-lamp-site -- -i -t -- /bin/bash -c 'ls -al /'
+kubectl exec mysql -- -i -t -- /bin/bash -c 'ls -al /'
+kubectl exec mysql -- -i -t -- /bin/bash -c 'echo text-abc > demo/textfile'
+
+minikube kubectl -- delete pod my-lamp-site
+rm -fv example-pod.yaml
+```
+
+
+```bash
+cat << EOF > my-lamp-site.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-alpine
+spec:
+    containers:
+    - name: mysql
+      image: alpine
+      volumeMounts:
+      - mountPath: /var/lib/mysql
+        name: site-data
+        subPath: mysql
+    - name: alpine
+      image: alpine:3.14.0
+      volumeMounts:
+      - mountPath: /var/www/html
+        name: site-data
+        subPath: html
+    volumes:
+    - name: site-data
+      persistentVolumeClaim:
+        claimName: my-lamp-site-data
+EOF
+      
+kubectl create -- -f my-lamp-site.yaml
+
+kubectl get pods
+
+kubectl exec my-alpine -- -i -t -- /bin/bash -c 'ls -al /'
+kubectl exec mysql -- -i -t -- /bin/bash -c 'ls -al /'
+kubectl exec mysql -- -i -t -- /bin/bash -c 'echo text-abc > demo/textfile'
+
+minikube kubectl -- delete pod my-lamp-site
+rm -fv example-pod.yaml
+```
+
+
+
+```bash
+cat << EOF > example-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-volume
+spec:
+  containers:
+  - image: alpine
+    imagePullPolicy: IfNotPresent
+    name: volume-container    
+    command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
+
+    volumeMounts:
+    - mountPath: /code
+      name: test-volume
+  volumes:
+  - name: test-volume
+    hostPath:
+      # directory location on host
+      path: /home
+      # this field is optional
+      type: Directory
+EOF
+      
+kubectl create -- -f example-pod.yaml
+kubectl get pods
+kubectl exec test-volume -- -i -t -- /bin/sh -c 'echo text-abc > /code/textfile'
+
+minikube kubectl -- delete pod test-volume
+rm -fv example-pod.yaml
+```
+
+```bash
+cat << EOF > example-pod-with-volume.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod1
+spec:
+  containers:
+  - name: container1
+    env:
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.name
+    image: busybox
+    command: [ "sh", "-c", "while [ true ]; do echo 'Hello'; sleep 3; done | tee -a /logs/hello.txt" ]
+    volumeMounts:
+    - name: workdir1
+      mountPath: /home/ubuntu/sandbox/sandbox
+      subPath: sandbox
+  restartPolicy: Never
+  volumes:
+  - name: workdir1
+    hostPath:
+      path: /home/ubuntu/sandbox/sandbox
+EOF
+      
+minikube kubectl create -- -f example-pod-with-volume.yaml
+minikube kubectl get pods
+minikube kubectl exec pod1 -- -i -t -- /bin/sh -c 'ls -al /home/ubuntu/sandbox/sandbox'
+minikube kubectl exec pod1 -- -i -t -- /bin/sh -c 'cat /home/ubuntu/sandbox/sandbox/hello.txt | wc -l'
+
+minikube kubectl -- delete pod pod1
+rm -fv example-pod-with-volume.yaml
+```
+
+
+2)
+```bash
+cat << EOF > projected.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-projected-volume
+spec:
+  containers:
+  - name: test-projected-volume
+    image: busybox
+    args:
+    - sleep
+    - "86400"
+    volumeMounts:
+    - name: all-in-one
+      mountPath: "/projected-volume"
+      readOnly: false
+  volumes:
+  - name: all-in-one
+    projected:
+      sources:
+      - secret:
+          name: user
+      - secret:
+          name: pass
+EOF
+
+# Create files containing the username and password:
+echo -n "admin" > ./username.txt
+echo -n "1f2d1e2e67df" > ./password.txt
+
+# Package these files into secrets:
+minikube kubectl create secret generic user -- --from-file=./username.txt
+minikube kubectl create secret generic pass -- --from-file=./password.txt
+
+minikube kubectl create -- -f projected.yaml
+minikube kubectl get pods
+minikube kubectl exec test-projected-volume -- -i -t -- /bin/sh -c 'cat /projected-volume/password.txt'
+minikube kubectl exec test-projected-volume -- -i -t -- /bin/sh -c 'echo abc123 >> /projected-volume/foo.txt'
+minikube kubectl exec test-projected-volume -- -i -t -- /bin/sh
+
+minikube kubectl -- delete pod test-projected-volume
+rm -fv projected.yaml
+```
+
+
+3)
+```bash
+cat << EOF > projected.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: test-pod
+    image: busybox
+    command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
+EOF
+
+minikube kubectl create -- -f projected.yaml
+minikube kubectl get pods
+sleep 10
+minikube kubectl get pods
+minikube kubectl exec test-pod -- -i -t -- /bin/sh -c ' ls -al /'
+
+minikube kubectl -- delete pod test-pod
+rm -fv projected.yaml
+```
+
+
+4)
+```bash
+cat << EOF > pod-volume.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod-volume
+spec:
+  containers:
+  - name: test-pod-volume
+    image: busybox
+    command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
+    volumeMounts:
+    - name: all-in-one
+      mountPath: "/home"
+      readOnly: false
+  volumes:
+  - name: all-in-one
+    hostPath:
+      # directory location on host
+      path: /home/ubuntu/sandbox/sandbox
+      # this field is optional
+      type: Directory
+EOF
+
+minikube kubectl create -- -f pod-volume.yaml
+minikube kubectl get pods
+minikube kubectl exec test-projected-volume -- -i -t -- /bin/sh -c ' ls -al /home'
+minikube kubectl exec test-projected-volume -- -i -t -- /bin/sh
+
+minikube kubectl -- delete pod test-pod-volume
+rm -fv pod-volume.yaml.yaml
+```
+
+```bash
+minikube kubectl describe pod test-pod-volume | rg Volumes --after-context=4
+```
+
+```bash
+minikube kubectl get ev | rg Failed
+```
+
+
+Deleting all pods:
+```bash
+minikube kubectl -- delete --all pods --namespace=default
+```
+Adapted from: https://gist.github.com/sharepointoscar/0c35e6fb9151a1967bd68253b1bf802f
+
+
+#### How to not use sudo and docker?
+
+
+Broken:
+```bash
+minikube start --driver=none
+```
+From: https://minikube.sigs.k8s.io/docs/drivers/none/#usage
+
+
+#### Trying the podman socket  
 
 nix profile install nixpkgs#docker
 
@@ -911,15 +1497,19 @@ Does not work:
 sudo mkdir -p /etc/sysconfig
 sudo sh -c 'echo DOCKER_OPTS=\"-H unix:///tmp/podman.sock -H tcp://172.17.0.1:2375\" >> /etc/sysconfig/docker'
 ```
+From: https://www.baeldung.com/ops/docker-engine-api-container-info
+
 
 podman system service --time=0 unix://var/run/docker.sock &
 echo "$(which docker)"
 sudo rm -r /etc/sysconfig/docker
 
+May be related? https://github.com/moby/moby/issues/24886
+
 #### Refs
 
 - https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
-- https://minikube.sigs.k8s.io/docs/start/  
+- https://minikube.sigs.k8s.io/docs/start/
 
 
 - https://github.com/rootless-containers/usernetes/tree/097d99e78e7a026093cad0057e0065ce407a94a4#enable-cpu-controller
@@ -930,4 +1520,814 @@ sudo rm -r /etc/sysconfig/docker
 - https://stackoverflow.com/a/68026463
 - https://mbien.dev/blog/tags/debian
 - https://stackoverflow.com/a/66827343
-- 
+
+
+### WIP ssh
+
+
+```
+time ./result/ssh-vm << COMMANDS
+echo 'Hi'
+id | grep ubuntu
+echo 'End'
+COMMANDS
+```
+Adapeted from: https://unix.stackexchange.com/a/187980
+
+
+```bash
+echo 'Start!'
+nix \
+build \
+github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
+&& result/run-vm-kvm < /dev/null & result/ssh-vm << COMMANDS
+echo 'Hi'
+id | grep ubuntu
+uname --all
+echo 'End'
+COMMANDS
+```
+
+```bash
+echo 'Start!'
+nix \
+build \
+github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
+&& echo 'Build finished!' \
+&& (result/run-vm-kvm < /dev/null &) \
+&& echo 'Starting ssh to VM' \
+&& result/ssh-vm << COMMANDS
+echo 'Hi'
+id | grep ubuntu
+uname --all
+echo 'End'
+COMMANDS
+```
+
+ls && (result/run-vm-kvm < /dev/null &) && result/ssh-vma
+
+
+```bash
+kill -s -KILL $(pidof qemu-system-x86_64)
+kill -9 $(pidof qemu-system-x86_64)
+```
+
+```bash
+nix \
+build \
+github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
+&& result/run-vm-kvm < /dev/null & result/ssh-vm
+```
+
+```bash
+result/ssh-vm << COMMANDS
+test -d /nix || sudo mkdir --mode=0755 /nix \
+&& sudo chown "$USER": /nix \
+&& SHA256=eccef9a426fd8d7fa4c7e4a8c1191ba1cd00a4f7 \
+&& curl -fsSL https://raw.githubusercontent.com/ES-Nix/get-nix/"$SHA256"/get-nix.sh | sh \
+&& . "$HOME"/.nix-profile/etc/profile.d/nix.sh \
+&& . ~/."$(ps -ocomm= -q $$)"rc \
+&& export TMPDIR=/tmp \
+&& export OLD_NIX_PATH="$(readlink -f $(which nix))" \
+&& nix-shell -I nixpkgs=channel:nixos-21.05 --keep OLD_NIX_PATH --packages nixFlakes --run 'nix-env --uninstall $OLD_NIX_PATH && nix-collect-garbage --delete-old && nix profile install nixpkgs#nixFlakes' \
+&& sudo rm -frv /nix/store/*-nix-2.3.* \
+&& unset OLD_NIX_PATH \
+&& nix-collect-garbage --delete-old \
+&& nix store gc \
+&& nix flake --version
+COMMANDS
+```
+
+
+```bash
+echo 'Start instalation!' \
+&& echo 'Start kvm stuff...' \
+&& getent group kvm || sudo groupadd kvm \
+&& sudo usermod --append --groups kvm "$USER" \
+&& echo 'End kvm stuff!' \
+&& echo 'Start cgroup v2 instalation...' \
+&& sudo mkdir -p /etc/systemd/system/user@.service.d \
+&& sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo \
+      sed \
+      --in-place \
+      's/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+    /etc/default/grub \
+&& sudo grub-mkconfig -o /boot/grub/grub.cfg \
+&& echo 'End cgroup v2 instalation...' \
+&& echo 'Start ip_forward stuff...' \
+&& sudo \
+      sed \
+      -i \
+      '/net.ipv4.ip_forward/s/^#*//g' \
+      /etc/sysctl.conf \
+&& echo 'End ip_forward stuff...' \
+&& echo 'Start dbus stuff...' \
+&& sudo apt-get update \
+&& sudo apt-get install -y dbus-user-session \
+&& echo 'End dbus stuff...' \
+&& echo 'Start uidmap stuff...' \
+&& sudo apt-get update \
+&& sudo apt-get install -y uidmap \
+&& echo 'End uidmap stuff...' \
+&& nix \
+    profile \
+    install \
+    github:ES-Nix/podman-rootless/from-nixpkgs \
+&& nix store gc \
+&& sudo reboot
+```
+
+```bash
+result/ssh-vm << COMMANDS
+podman \
+run \
+--interactive=true \
+--memory-reservation=200m \
+--memory=300m \
+--memory-swap=300m \
+--rm=true \
+--tty=false \
+docker.io/library/alpine:3.14.0 \
+echo \
+'Hi!'
+COMMANDS
+```
+
+
+
+```bash
+result/run-vm-kvm < /dev/null &
+```
+
+```bash
+result/run-vm-kvm&
+result/run-vm-kvm &
+result/run-vm-kvm > /dev/null 2>&1 &
+nohup result/run-vm-kvm > /dev/null 2>&1 &
+nohup result/run-vm-kvm > /dev/null &
+```
+
+
+
+
+```bash
+podman \
+run \
+--device=/dev/kvm \
+--device=/dev/fuse \
+--env="DISPLAY=${DISPLAY:-:0.0}" \
+--interactive=true \
+--log-level=error \
+--network=host \
+--mount=type=tmpfs,destination=/var/lib/containers \
+--privileged=false \
+--tty=false \
+--rm=true \
+--userns=host \
+--user=0 \
+--volume=/etc/localtime:/etc/localtime:rw \
+--volume=/sys/fs/cgroup:/sys/fs/cgroup:rw \
+--volume=/tmp/.X11-unix:/tmp/.X11-unix:rw \
+localhost/nix-flake-nested-qemu-kvm-vm \
+bash \
+<< OUTCOMMANDS
+result/run-vm-kvm < /dev/null & result/ssh-vm << COMMANDS
+echo 'Hi'
+id | grep ubuntu
+uname --all
+echo 'End'
+COMMANDS
+OUTCOMMANDS
+```
+
+```bash
+podman \
+run \
+--deteach=true \
+--device=/dev/kvm \
+--device=/dev/fuse \
+--env="DISPLAY=${DISPLAY:-:0.0}" \
+--interactive=false \
+--log-level=error \
+--name=container-qemu-vm \
+--network=host \
+--mount=type=tmpfs,destination=/var/lib/containers \
+--privileged=false \
+--tty=false \
+--rm=true \
+--userns=host \
+--user=0 \
+--volume=/etc/localtime:/etc/localtime:rw \
+--volume=/sys/fs/cgroup:/sys/fs/cgroup:rw \
+--volume=/tmp/.X11-unix:/tmp/.X11-unix:rw \
+localhost/nix-flake-nested-qemu-kvm-vm \
+bash \
+<< OUTCOMMANDS
+result/run-vm-kvm
+OUTCOMMANDS
+```
+
+```bash
+podman \
+run \
+--device=/dev/kvm \
+--device=/dev/fuse \
+--env="DISPLAY=${DISPLAY:-:0.0}" \
+--interactive=true \
+--log-level=error \
+--name=container-qemu-vm \
+--network=host \
+--mount=type=tmpfs,destination=/var/lib/containers \
+--privileged=false \
+--tty=false \
+--rm=true \
+--userns=host \
+--user=0 \
+--volume=/etc/localtime:/etc/localtime:rw \
+--volume=/sys/fs/cgroup:/sys/fs/cgroup:rw \
+--volume=/tmp/.X11-unix:/tmp/.X11-unix:rw \
+localhost/nix-flake-nested-qemu-kvm-vm \
+bash \
+<< OUTCOMMANDS
+result/run-vm-kvm < /dev/null & result/ssh-vm << COMMANDS
+echo 'Start instalation!' \
+&& echo 'Start kvm stuff...' \
+&& getent group kvm || sudo groupadd kvm \
+&& sudo usermod --append --groups kvm "\$USER" \
+&& echo 'End kvm stuff!' \
+&& echo 'Start cgroup v2 instalation...' \
+&& sudo mkdir -p /etc/systemd/system/user@.service.d \
+&& sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo \
+      sed \
+      --in-place \
+      's/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+    /etc/default/grub \
+&& sudo grub-mkconfig -o /boot/grub/grub.cfg \
+&& echo 'End cgroup v2 instalation...' \
+&& echo 'Start ip_forward stuff...' \
+&& sudo \
+      sed \
+      -i \
+      '/net.ipv4.ip_forward/s/^#*//g' \
+      /etc/sysctl.conf \
+&& echo 'End ip_forward stuff...' \
+&& echo 'Start dbus stuff...' \
+&& sudo apt-get update \
+&& sudo apt-get install -y dbus-user-session \
+&& echo 'End dbus stuff...' \
+&& echo 'Start uidmap stuff...' \
+&& sudo apt-get update \
+&& sudo apt-get install -y uidmap \
+&& echo 'End uidmap stuff...' \
+&& nix \
+    profile \
+    install \
+    github:ES-Nix/podman-rootless/from-nixpkgs \
+&& nix store gc \
+&& sudo reboot
+COMMANDS
+OUTCOMMANDS
+```
+
+```bash
+podman \
+exec \
+--env=VAR=foo \
+--interactive=true \
+--log-level=error \
+--privileged=true \
+--tty=true \
+container-qemu-vm \
+bash
+```
+
+```bash
+netstat -tanp | grep 10022
+
+ps aux | rg -e qemu -e COMMAND | rg -v rg
+
+qemu-kvm --help | rg -e '-monitor'
+```
+
+
+
+#### 
+
+systemd-cgls
+systemd --test --system --log-level=debug --no-pager
+
+systemctl status user@$(id -u).service
+
+k3s server --rootless&
+
+sudo apt-get update
+sudo apt-get install -y nmap
+sudo nmap -sT -O localhost
+sudo nmap -sT -O 127.0.0.1
+sudo ss -tulwn | grep LISTEN
+netstat -nlp
+
+
+nc -w5 -z -v 127.0.0.53 53
+
+
+systemctl list-unit-files --state=enabled | rg resolved
+systemctl list-unit-files | rg resolved
+
+systemctl disable systemd-resolved.service
+sudo reboot
+
+systemctl enable systemd-resolved.service
+sudo reboot
+
+k3s server --rootless&
+k3s server --rootless --flannel-backend 'host-gw'&
+k3s server --rootless --server http://127.0.0.1:6443&
+k3s server --rootless --cluster-cidr=10.10.0.0/16&
+k3s server --rootless --cluster-cidr=10.42.42.0/24&
+k3s server --rootless --cluster-cidr=http://127.0.0.53:53&
+k3s server --rootless --cluster-cidr=127.0.0.1:6443 --service-cidr=127.0.0.1:6443&
+k3s server --rootless --cluster-cidr=127.0.0.53:53 --service-cidr=127.0.0.53:53&
+
+https://10.41.0.100:6443
+127.0.0.1:6443
+
+
+cat /lib/modules/5.11.0-31-generic/build/.config
+
+
+k3s --debug server --disable-agent
+
+
+lsmod | rg -e 'br_netfilter'
+
+env | rg DBUS
+
+systemd-run --user -p Delegate=yes --tty k3s server --rootless --snapshotter=fuse-overlayfs
+systemd-run --user -p Delegate=yes --tty k3s server --rootless --disable-agent --snapshotter=fuse-overlayfs
+
+helm --kube-apiserver http://localhost:8080 install hello-world ./hello-world
+helm --kube-apiserver http://10.10.0.0/16 install hello-world ./hello-world
+helm --kube-apiserver http://10.42.42.0/24 install hello-world ./hello-world
+helm --kube-apiserver 127.0.0.1:6443 install hello-world ./hello-world
+helm --kube-apiserver http://127.0.0.1:6443 install hello-world ./hello-world
+helm --kube-apiserver=0.0.0.0:10080 install hello-world ./hello-world
+
+nc -w5 -z -v 0.0.0.0 10443
+nc -w5 -z -v 0.0.0.0 6443 
+nc -w5 -z -v 0.0.0.0 10443
+
+
+systemd-run --user -p Delegate=yes --tty /bin/sh -c 'env'
+systemd-run --user -p Delegate=yes --tty /bin/bash -c "PATH=/home/ubuntu/.nix-profile/bin:$PATH exec k3s server --rootless --disable-agent --snapshotter=fuse-overlayfs"
+
+
+systemd-cgtop
+cat /proc/self/cgroup
+
+k3s kubectl get pods
+
+
+
+
+cat << EOF >  ~/foo
+[Unit]
+Description=k3s (Rootless)
+
+[Service]
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# NOTE: Don't try to run `k3s server --rootless` on a terminal, as it doesn't enable cgroup v2 delegation.
+# If you really need to try it on a terminal, prepend `systemd-run --user -p Delegate=yes --tty` to create a systemd scope.
+ExecStart=$(nix eval --raw nixpkgs#k3s)/bin/k3s server --rootless --snapshotter=fuse-overlayfs
+ExecReload=/bin/kill -s HUP \$MAINPID
+TimeoutSec=0
+RestartSec=2
+Restart=always
+StartLimitBurst=3
+StartLimitInterval=60s
+LimitNOFILE=infinity
+LimitNPROC=infinity
+LimitCORE=infinity
+TasksMax=infinity
+Delegate=yes
+Type=simple
+KillMode=mixed
+
+[Install]
+WantedBy=default.target
+EOF
+
+mv ~/k3s-rootless.service ~/.config/systemd/user/k3s-rootless.service
+
+
+
+### kubectl
+
+
+kubectl config view
+kubectl config current-context
+
+
+https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/#define-clusters-users-and-contexts
+
+nix shell nixpkgs#kubectl --command kubectl version --client
+
+ls $([[ ! -z "$KUBECONFIG" ]] && echo "$KUBECONFIG" || echo "$HOME/.kube/config")
+
+mkdir -p ~/.kube/config
+
+cat << EOF > ~/.kube/sa.yml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: svcs-acct-dply #any name you'd like
+EOF
+
+kubectl create -f ~/.kube/sa.yml
+
+
+kubectl get pods --server https://localhost:6443
+
+cd ~
+echo -n 'admin' > ~/username.txt
+echo -n '1f2d1e2e67df' > ~/password.txt
+
+This CLI does not expand `~`!
+
+kubectl \
+--server https://localhost:6443 \
+create \
+secret \
+generic \
+db-user-pass \
+--from-file=username.txt \
+--from-file=password.txt
+
+
+```bash
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: PATH_TO_SOMEWHERE/.minikube/ca.crt
+    server: https://172.17.0.3:8443
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: PATH_TO_SOMEWHERE/client.crt
+    client-key: PATH_TO_SOMEWHERE/client.key
+```
+
+
+### 
+
+
+```bash
+echo 'Start instalation!' \
+&& echo 'Start kvm stuff...' \
+&& getent group kvm || sudo groupadd kvm \
+&& sudo usermod --append --groups kvm "$USER" \
+&& echo 'End kvm stuff!' \
+&& echo 'Start cgroup v2 instalation...' \
+&& sudo mkdir -p /etc/systemd/system/user@.service.d \
+&& sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo \
+      sed \
+      --in-place \
+      's/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+    /etc/default/grub \
+&& sudo grub-mkconfig -o /boot/grub/grub.cfg \
+&& echo 'End cgroup v2 instalation...' \
+&& echo 'Start ip_forward stuff...' \
+&& sudo \
+      sed \
+      -i \
+      '/net.ipv4.ip_forward/s/^#*//g' \
+      /etc/sysctl.conf \
+&& echo 'End ip_forward stuff...' \
+&& echo 'Start dbus stuff...' \
+&& sudo apt-get update \
+&& sudo apt-get install -y dbus-user-session \
+&& echo 'End dbus stuff...' \
+&& echo 'Start uidmap stuff...' \
+&& sudo apt-get update \
+&& sudo apt-get install -y uidmap \
+&& echo 'End uidmap stuff...' \
+&& nix \
+    profile \
+    install \
+    github:ES-Nix/podman-rootless/from-nixpkgs \
+    nixpkgs#cni \
+    nixpkgs#cni-plugins \
+    nixpkgs#conntrack-tools \
+    nixpkgs#fuse-overlayfs \
+    nixpkgs#kubernetes-helm \
+    nixpkgs#kvm \
+    nixpkgs#minikube \
+    nixpkgs#ripgrep \
+    nixpkgs#slirp4netns \
+    nixpkgs#tree \
+    nixpkgs#which \
+&& sudo ln -fsv /home/ubuntu/.nix-profile/bin/podman /usr/bin/podman \
+&& sudo mkdir -p /usr/lib/cni \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/portmap /usr/lib/cni/portmap \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/firewall /usr/lib/cni/firewall \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/tuning /usr/lib/cni/tuning \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/bridge /usr/lib/cni/bridge \
+&& echo 'Start bypass sudo podman stuff...' \
+&& sudo \
+--preserve-env \
+su \
+-c \
+"echo $USER ALL=\(ALL\) NOPASSWD: $(readlink $(which podman)) >> /etc/sudoers" \
+&& echo 'End bypass sudo podman stuff...' \
+&& nix store gc \
+&& sudo reboot
+```
+
+```bash
+minikube \
+start \
+--iso-url=https://vbatts.fedorapeople.org/minikube/minikube.git3358402.iso \
+--driver=podman
+```
+
+nixpkgs#cri-o
+sudo ln -fsv "$(nix eval --raw nixpkgs#cri-o)"/bin/crio /usr/lib/crio
+
+```bash
+minikube \
+start \
+--iso-url=https://vbatts.fedorapeople.org/minikube/minikube.git3358402.iso \
+--driver=podman \
+--container-runtime=cri-o
+```
+From: 
+
+minikube \
+start \
+--iso-url=https://vbatts.fedorapeople.org/minikube/minikube.git3358402.iso \
+--driver=podman \
+--extra-config=kubelet.container-runtime=remote \
+--cni=bridge \
+--enable-default-cni
+
+
+minikube \
+start \
+--iso-url=https://vbatts.fedorapeople.org/minikube/minikube.git3358402.iso \
+--driver=podman \
+--extra-config=kubelet.container-runtime=remote \
+--cni=bridge \
+--enable-default-cni \
+--vm-driver=virtualbox
+
+
+sudo ln -fsv "$(nix eval --raw nixpkgs#kvm)"/bin/qemu-kvm /usr/lib/kvm2
+file /usr/lib/kvm2 | rg -e 'kvm'
+
+minikube \
+start \
+--driver=kvm2
+
+#### 
+minikube delete
+
+kubectl get pods
+
+
+minikube start --driver=kvm
+
+minikube start --driver=podman
+minikube start --driver="$(readlink $(which podman))"
+
+minikube \
+start \
+--iso-url=https://vbatts.fedorapeople.org/minikube/minikube.git3358402.iso \
+--driver="$(readlink $(which podman))"
+
+minikube \
+start \
+--iso-url=[https://storage.googleapis.com/minikube-builds/iso/12268/minikube-v1.22.0-1628974786-12268.iso,https://github.com/kubernetes/minikube/releases/download/v1.22.0-1628974786-12268/minikube-v1.22.0-1628974786-12268.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.22.0-1628974786-12268.iso] \
+--driver=podman
+
+
+minikube start --help | grep -e '--iso-url'
+
+nix \
+profile \
+install \
+github:ES-Nix/podman-rootless/from-nixpkgs \
+nixpkgs#k3s \
+
+
+
+####
+
+ps auxww | rg rootlessport | rg -v rg
+
+
+```bash
+podman \
+run \
+--interactive=true \
+--tty=true \
+--rm=true \
+--user=0 \
+busybox \
+sh \
+-c \
+'ping google.com'
+```
+
+```bash
+podman \
+run \
+--interactive=true \
+--tty=true \
+--rm=true \
+--user=0 \
+busybox \
+sh \
+-c \
+"ping -W10 -c1 google.com | grep -e '0% packet loss'"
+```
+
+```bash
+podman \
+run \
+--interactive=true \
+--tty=true \
+--rm=true \
+--user=0 \
+ubuntu:21.04 \
+bash \
+-c \
+"apt-get update -y && apt-get install -y iputils-ping && ping -W10 -c1 google.com | grep -e '0% packet loss'"
+```
+
+
+```bash
+podman \
+run \
+--interactive=true \
+--tty=true \
+--rm=true \
+--user=0 \
+fedora:35 \
+bash \
+-c \
+"yum install -y iputils && ping -W10 -c1 google.com | grep -e '0% packet loss'"
+```
+
+```bash
+podman \
+run \
+--interactive=true \
+--tty=true \
+--rm=true \
+--user=0 \
+fedora:35 \
+bash \
+-c \
+"yum install -y iputils && ping -W10 -c1 google.com | grep -e '0% packet loss'"
+```
+
+```bash
+podman \
+run \
+--detach=true \
+--name=container-nginx-unprivileged \
+--network=host \
+--rm=true \
+--user=0 \
+nginxinc/nginx-unprivileged \
+&& curl http://localhost:8080 | rg -e 'Thank you for using nginx.' \
+&& podman stop container-nginx-unprivileged \
+&& podman rm container-nginx-unprivileged
+```
+
+
+#### 
+
+podman pod create -p 8080:80 --name wpapp_pod \
+&& podman pod list | rg wpapp_pod \
+&& podman ps --all | rg -e 'k8s.gcr.io/pause'
+
+podman \
+run \
+-d \
+--restart=always \
+--pod wpapp_pod \
+-e MYSQL_ROOT_PASSWORD="myrootpass" \
+-e MYSQL_DATABASE="wp-db" \
+-e MYSQL_USER="wp-user" \
+-e MYSQL_PASSWORD="w0rdpr3ss" \
+--name=wptest-db mariadb
+
+
+#### podman 2 and minikube
+
+
+https://github.com/kubernetes/minikube/issues/10649
+
+
+
+https://4shells.com/nixdb/pkg/podman/2.2.1
+
+
+```bash
+nix \
+profile \
+install \
+nixpkgs/7138a338b58713e0dea22ddab6a6785abec7376a#podman \
+nixpkgs#minikube \
+nixpkgs#cri-o
+
+sudo apt-get update \
+&& sudo apt-get install -y uidmap
+
+sudo \
+--preserve-env \
+su \
+-c \
+"echo $USER ALL=\(ALL\) NOPASSWD: $(readlink $(which podman)) >> /etc/sudoers"
+
+sudo ln -fsv /home/ubuntu/.nix-profile/bin/podman /usr/bin/podman
+sudo ln -fsv "$(nix eval --raw nixpkgs#cri-o)"/bin/crio /usr/lib/crio
+```
+
+echo "net.ipv4.ping_group_range=0 429496729" > /etc/sysctl.d/03-non-root-icmp.conf
+
+podman --version | rg -e 'podman version 3.0.1'
+```bash
+nix \
+profile \
+install \
+nixpkgs/a765beccb52f30a30fee313fbae483693ffe200d#podman \
+nixpkgs#minikube \
+nixpkgs#cri-o
+
+sudo apt-get update \
+&& sudo apt-get install -y uidmap
+
+sudo \
+--preserve-env \
+su \
+-c \
+"echo $USER ALL=\(ALL\) NOPASSWD: $(readlink $(which podman)) >> /etc/sudoers"
+
+sudo ln -fsv /home/ubuntu/.nix-profile/bin/podman /usr/bin/podman
+sudo ln -fsv "$(nix eval --raw nixpkgs#cri-o)"/bin/crio /usr/lib/crio
+```
+
+podman network create
+
+```bash
+echo 'Start cgroup v2 instalation...' \
+&& sudo mkdir -p /etc/systemd/system/user@.service.d \
+&& sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo \
+      sed \
+      --in-place \
+      's/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+    /etc/default/grub \
+&& sudo grub-mkconfig -o /boot/grub/grub.cfg \
+&& echo 'End cgroup v2 instalation...'
+```
+
+```bash
+podman \
+run \
+--interactive=true \
+--tty=true \
+--rm=true \
+--user=0 \
+busybox \
+sh \
+-c \
+"ping -W10 -c1 google.com | grep -e '0% packet loss'"
+```
+
+```bash
+minikube start --driver=podman --container-runtime=cri-o
+```
+
+
+#### In podman 3.4?
+podman pod create --userns=keep-id --name dan1 \
+&& podman run --pod dan1 fedora id
