@@ -283,6 +283,7 @@ echo 'Start kvm stuff...' \
     's/^SELINUX=permissive/SELINUX=disabled/' \
     /etc/selinux/config \
 && echo 'End SELinux instalation!' \
+&& echo 'Start a lot of instalation with nix!' \
 && nix \
     profile \
     install \
@@ -303,6 +304,7 @@ echo 'Start kvm stuff...' \
     nixpkgs#strace \
     nixpkgs#tree \
     nixpkgs#which \
+&& echo 'End instalation with nix!' \
 && sudo ln -fsv /home/ubuntu/.nix-profile/bin/podman /usr/bin/podman \
 && sudo mkdir -p /usr/lib/cni \
 && sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/portmap /usr/lib/cni/portmap \
@@ -337,6 +339,24 @@ COMMANDS
 minikube start --driver=podman --container-runtime=cri-o
 COMMANDS
 }
+```
+
+```bash
+ssh-vm
+```
+
+```bash
+podman \
+run \
+--interactive=true \
+--tty=true \
+--rm=true \
+--user=0 \
+gcr.io/k8s-minikube/kicbase:v0.0.26 \
+bash \
+-c \
+'ls -al /'
+
 ```
 
 

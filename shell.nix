@@ -51,9 +51,9 @@ COMMANDS
       }
 
       ssh-vm() {
-        kill -9 $(pidof qemu-system-x86_64) 1>/dev/null 2>/dev/null || true \
-        && test -d result || nix build .#qemu.vm \
-        && (result/run-vm-kvm < /dev/null &) \
+        # kill -9 $(pidof qemu-system-x86_64) 1>/dev/null 2>/dev/null || true \
+        pidof qemu-system-x86_64 || test -d result || nix build .#qemu.vm \
+        && pidof qemu-system-x86_64 || (result/run-vm-kvm < /dev/null &) \
         && result/ssh-vm
       }
 
