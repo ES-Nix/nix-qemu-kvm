@@ -262,47 +262,22 @@ echo 'Start kvm stuff...' \
 && sudo apt-get update \
 && sudo apt-get install -y uidmap \
 && echo 'End uidmap instalation!' \
-&& echo 'Start SELinux instalation!' \
-&& sudo \
-    apt-get \
-    update \
-&& sudo \
-    apt-get \
-    install \
-    -y \
-    policycoreutils \
-    selinux-utils \
-    selinux-basics \
-&& sudo apt-get -y autoremove \
-&& sudo apt-get -y clean  \
-&& sudo rm -rf /var/lib/apt/lists/* \
-&& sudo selinux-activate \
-&& sudo \
-    sed \
-    --in-place \
-    's/^SELINUX=permissive/SELINUX=disabled/' \
-    /etc/selinux/config \
-&& echo 'End SELinux instalation!' \
 && echo 'Start a lot of instalation with nix!' \
 && nix \
     profile \
     install \
     github:ES-Nix/podman-rootless/from-nixpkgs \
-    nixpkgs#bashInteractive \
     nixpkgs#cni \
     nixpkgs#cni-plugins \
     nixpkgs#conntrack-tools \
     nixpkgs#cri-o \
     nixpkgs#file \
     nixpkgs#findutils \
-    nixpkgs#gnumake \
-    nixpkgs#jq \
     nixpkgs#kubernetes-helm \
     nixpkgs#minikube \
     nixpkgs#ripgrep \
     nixpkgs#slirp4netns \
     nixpkgs#strace \
-    nixpkgs#tree \
     nixpkgs#which \
 && echo 'End instalation with nix!' \
 && sudo ln -fsv /home/ubuntu/.nix-profile/bin/podman /usr/bin/podman \
@@ -339,20 +314,203 @@ COMMANDS
 && kill -9 $(pidof qemu-system-x86_64) \
 && (result/run-vm-kvm < /dev/null &) \
 && { result/ssh-vm << COMMANDS
-minikube start --driver=podman
+podman network create podman
+podman network create minikube
+minikube start --driver=podman --base-image=gcr.io/k8s-minikube/kicbase:v0.0.25
+cat /home/ubuntu/.minikube/logs/lastStart.txt
 COMMANDS
 } && kill -9 $(pidof qemu-system-x86_64) \
 && result/refresh \
 && result/resetToBackup wip-01 \
 && (result/run-vm-kvm < /dev/null &) \
 && { result/ssh-vm << COMMANDS
+podman network create podman
 minikube start --driver=podman --container-runtime=cri-o
+cat /home/ubuntu/.minikube/logs/lastStart.txt
 COMMANDS
 }
 ```
 
 ```bash
 ssh-vm
+```
+
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock:ro assaflavie/runlike
+
+docker \
+run \
+--detach=true \
+--env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+--env=container=docker \
+--hostname=minikube \
+--label='created_by.minikube.sigs.k8s.io=true' \
+--label='mode.minikube.sigs.k8s.io=minikube' \
+--label='name.minikube.sigs.k8s.io=minikube' \
+--label='role.minikube.sigs.k8s.io=' \
+--name=minikube \
+--network=minikube \
+--privileged=true \
+-p 22 \
+-p 2376 \
+-p 32443 \
+-p 5000 \
+-p 8443 \
+--restart=no \
+--runtime=runc \
+--tty=true \
+--user=root \
+--volume=/lib/modules:/lib/modules:ro \
+--volume=minikube:/var \
+gcr.io/k8s-minikube/kicbase:v0.0.25@sha256:6f936e3443b95cd918d77623bf7b595653bb382766e280290a02b4a349e88b79
+
+
+podman \
+run \
+--detach=true \
+--env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+--env=container=podman \
+--hostname=minikube \
+--label='created_by.minikube.sigs.k8s.io=true' \
+--label='mode.minikube.sigs.k8s.io=minikube' \
+--label='name.minikube.sigs.k8s.io=minikube' \
+--label='role.minikube.sigs.k8s.io=' \
+--name=minikube \
+--network=minikube \
+--privileged=true \
+-p 22 \
+-p 2376 \
+-p 32443 \
+-p 5000 \
+-p 8443 \
+--restart=no \
+--runtime=crun \
+--tty=true \
+--user=root \
+--volume=/lib/modules:/lib/modules:ro \
+--volume=minikube:/var \
+gcr.io/k8s-minikube/kicbase:v0.0.25
+
+
+sudo podman network create minikube
+sudo podman network ls
+
+sudo podman ps
+
+sudo \
+podman \
+run \
+--detach=true \
+--env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+--env=container=docker \
+--hostname=minikube \
+--label='created_by.minikube.sigs.k8s.io=true' \
+--label='mode.minikube.sigs.k8s.io=minikube' \
+--label='name.minikube.sigs.k8s.io=minikube' \
+--label='role.minikube.sigs.k8s.io=' \
+--name=minikube \
+--network=minikube \
+--privileged=true \
+--publish=22 \
+--publish=2376 \
+--publish=32443 \
+--publish=5000 \
+--publish=8443 \
+--restart=no \
+--rm=true \
+--runtime=crun \
+--tty=true \
+--user=root \
+--volume=/lib/modules:/lib/modules:ro \
+--volume=minikube:/var \
+gcr.io/k8s-minikube/kicbase:v0.0.25
+
+
+```
+result/resetToBackup wip-01 \
+&& kill -9 $(pidof qemu-system-x86_64) || true \
+&& (result/run-vm-kvm < /dev/null &) \
+&& { result/ssh-vm << COMMANDS
+sudo podman network create minikube \
+&& sudo \
+podman \
+run \
+--detach=true \
+--env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+--env=container=podman \
+--hostname=minikube \
+--label='created_by.minikube.sigs.k8s.io=true' \
+--label='mode.minikube.sigs.k8s.io=minikube' \
+--label='name.minikube.sigs.k8s.io=minikube' \
+--label='role.minikube.sigs.k8s.io=' \
+--name=minikube \
+--network=minikube \
+--privileged=true \
+--publish=22 \
+--publish=2376 \
+--publish=32443 \
+--publish=5000 \
+--publish=8443 \
+--restart=no \
+--rm=true \
+--runtime=crun \
+--tty=true \
+--user=root \
+--volume=/lib/modules:/lib/modules:ro \
+--volume=minikube:/var \
+gcr.io/k8s-minikube/kicbase:v0.0.25 \
+&& sudo podman images \
+&& minikube start --driver=podman --base-image=gcr.io/k8s-minikube/kicbase:v0.0.25
+COMMANDS
+} 
+```
+
+```bash
+helm version
+kubectl version client
+minikube version
+podman --version
+```
+
+```bash
+which helm
+which kubectl
+which minikube
+which podman
+```
+
+
+
+```bash
+sudo \
+-n \
+podman \
+run \
+--rm \
+--name minikube-preload-sidecar \
+--label created_by.minikube.sigs.k8s.io=true \
+--label name.minikube.sigs.k8s.io=minikube \
+--entrypoint /usr/bin/test \
+-v minikube:/var \
+gcr.io/k8s-minikube/kicbase:v0.0.25 \
+-d \
+/var/lib
+```
+
+```bash
+sudo \
+-n \
+podman \
+run \
+--network=host \
+--rm \
+--name minikube-preload-sidecar \
+--label created_by.minikube.sigs.k8s.io=true \
+--label name.minikube.sigs.k8s.io=minikube \
+--entrypoint /usr/bin/test \
+-v minikube:/var \
+gcr.io/k8s-minikube/kicbase:v0.0.25 \
+-d \
+/var/lib
 ```
 
 ```bash
@@ -366,9 +524,34 @@ gcr.io/k8s-minikube/kicbase:v0.0.26 \
 bash \
 -c \
 'ls -al /'
-
 ```
 
+```bash
+podman \
+run \
+--interactive=true \
+--privileged=true \
+--tty=true \
+--rm=true \
+--user=0 \
+gcr.io/k8s-minikube/kicbase:v0.0.26 \
+bash \
+-c \
+'ls -al /'
+```
+
+```bash
+podman \
+run \
+--rm=true \
+--name=minikube-preload-sidecar \
+--label=created_by.minikube.sigs.k8s.io=true \
+--label=name.minikube.sigs.k8s.io=minikube \
+--entrypoint=/usr/bin/test \
+-v minikube:/var \
+kicbase/stable:v0.0.26 \
+-d /var/lib
+```
 
 ### Magic boilerplate
 

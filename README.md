@@ -873,21 +873,17 @@ echo 'Start kvm stuff...' \
     profile \
     install \
     github:ES-Nix/podman-rootless/from-nixpkgs \
-    nixpkgs#bashInteractive \
     nixpkgs#cni \
     nixpkgs#cni-plugins \
     nixpkgs#conntrack-tools \
     nixpkgs#cri-o \
     nixpkgs#file \
     nixpkgs#findutils \
-    nixpkgs#gnumake \
-    nixpkgs#jq \
     nixpkgs#kubernetes-helm \
     nixpkgs#minikube \
     nixpkgs#ripgrep \
     nixpkgs#slirp4netns \
     nixpkgs#strace \
-    nixpkgs#tree \
     nixpkgs#which \
 && sudo ln -fsv /home/ubuntu/.nix-profile/bin/podman /usr/bin/podman \
 && sudo mkdir -p /usr/lib/cni \
@@ -924,6 +920,7 @@ minikube start --driver=podman --container-runtime=cri-o
 COMMANDS
 }
 ```
+
 
 
 
