@@ -337,8 +337,6 @@ COMMANDS
 } && result/backupCurrentState wip-01 \
 && echo 'End of backup wip-01' \
 && kill -9 $(pidof qemu-system-x86_64) \
-&& result/refresh \
-&& result/resetToBackup wip-01 \
 && (result/run-vm-kvm < /dev/null &) \
 && { result/ssh-vm << COMMANDS
 minikube start --driver=podman
