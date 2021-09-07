@@ -40,7 +40,14 @@ COMMANDS
 
         backup_name=$1
         if [ -z "$backup_name" ]; then
-          backup_name='default';
+          kill -9 $(pidof qemu-system-x86_64) 1>/dev/null 2>/dev/null || true \
+          && test -d result || nix build .#qemu.vm \
+          && result/refresh \
+          && (result/run-vm-kvm < /dev/null &) \
+          && result/ssh-vm \
+
+          # Note: if `exit 0` is used `nix develop` is exited too.
+          return 0
         fi
 
         kill -9 $(pidof qemu-system-x86_64) 1>/dev/null 2>/dev/null || true \
