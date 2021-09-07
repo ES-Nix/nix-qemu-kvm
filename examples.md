@@ -74,9 +74,9 @@ EOF
 minikube kubectl -- create -f pod-volume.yaml
 minikube kubectl -- get pods | grep -e 'ContainerCreating' || echo 'Error'
 
-until ! minikube kubectl -- get pods | grep -e 'ContainerCreating'
+until ! minikube kubectl -- get pods | grep -e 'Running'
 do
-    echo "Waiting for minikube kubectl -- get pods --output=wide"
+    echo "Waiting for minikube kubectl -- get pods"
     sleep 1
 done
 COMMANDS
@@ -156,6 +156,8 @@ COMMANDS
 
 ### Only podman from apt
 
+
+
 ```bash
 create-nix-flake-backup \
 && kill -9 $(pidof qemu-system-x86_64) || true \
@@ -232,7 +234,7 @@ COMMANDS
 ```
 
 
-### WIP
+### WIP, all from nix
 
 ```bash
 kill -9 $(pidof qemu-system-x86_64) || true \
@@ -459,10 +461,52 @@ run \
 --volume=minikube:/var \
 gcr.io/k8s-minikube/kicbase:v0.0.25 \
 && sudo podman images \
+&& sudo podman ps --all \
+&& minikube status \
 && minikube start --driver=podman --base-image=gcr.io/k8s-minikube/kicbase:v0.0.25
 COMMANDS
 } 
 ```
+
+sudo podman network create minikube \
+&& sudo podman network ls \
+&& sudo \
+podman \
+run \
+--detach=true \
+--log-level=debug \
+--env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+--env=container=podman \
+--expose=8443 \
+--hostname=minikube \
+--ip=192.168.49.2 \
+--label='created_by.minikube.sigs.k8s.io=true' \
+--label='mode.minikube.sigs.k8s.io=minikube' \
+--label='name.minikube.sigs.k8s.io=minikube' \
+--label='role.minikube.sigs.k8s.io=' \
+--name=minikube \
+--network=minikube \
+--privileged=true \
+--publish=127.0.0.1::22 \
+--publish=127.0.0.1::2376 \
+--publish=127.0.0.1::32443 \
+--publish=127.0.0.1::5000 \
+--publish=127.0.0.1::8443 \
+--restart=no \
+--rm=true \
+--runtime=crun \
+--tmpfs=/tmp \
+--tmpfs=/run \
+--tty=true \
+--user=root \
+--volume=/lib/modules:/lib/modules:ro \
+--volume=minikube:/var \
+gcr.io/k8s-minikube/kicbase:v0.0.25 \
+&& sudo podman images \
+&& sudo podman ps --all
+
+
+sudo podman network rm -f minikube
 
 ```bash
 helm version
@@ -566,5 +610,13 @@ COMMANDS
 ```
 
 
-
- 
+```bash
+nix \
+build \
+github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
+&& nix \
+shell \
+github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
+&& create-nix-flake-backup \
+&& fresh-ssh-vm nix-flake
+```
