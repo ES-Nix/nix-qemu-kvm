@@ -42,7 +42,7 @@ Most of this source is from [zimbatm](https://github.com/zimbatm/nix-experiments
 ## Troubloshoting a bug in my setup with poetry2nix
 
 ```
-echo 'b' | sudo --stdin sed --in-place '/root    ALL=(ALL:ALL) ALL/a ubuntu    ALL=(ALL:ALL) ALL' /etc/sudoers
+echo 'b' | sudo --stdin sed --in-place '/rootALL=(ALL:ALL) ALL/a ubuntuALL=(ALL:ALL) ALL' /etc/sudoers
 curl -fsSL https://raw.githubusercontent.com/ES-Nix/get-nix/3c9d46f016ad1f1384791a1900cb5678cf7deb8a/get-nix.sh | sh
 . "$HOME"/.nix-profile/etc/profile.d/nix.sh
 . ~/.profile
@@ -83,26 +83,26 @@ sudo chown -R "$USER":kvm /dev/kvm /dev/pts /dev/ptmx
 
 ```bash
 ubuntu@ubuntu:~$ stat /dev/kvm /dev/pts /dev/ptmx
-  File: /dev/kvm
-  Size: 0               Blocks: 0          IO Block: 4096   character special file
-Device: 6h/6d   Inode: 346         Links: 1     Device type: a,e8
-Access: (0600/crw-------)  Uid: ( 1000/  ubuntu)   Gid: ( 1001/     kvm)
+File: /dev/kvm
+Size: 0 Blocks: 0IO Block: 4096 character special file
+Device: 6h/6d Inode: 346 Links: 1 Device type: a,e8
+Access: (0600/crw-------)Uid: ( 1000/ubuntu) Gid: ( 1001/ kvm)
 Access: 2021-06-26 20:14:26.260000000 +0000
 Modify: 2021-06-26 20:14:26.260000000 +0000
 Change: 2021-06-26 20:15:24.287113618 +0000
  Birth: -
-  File: /dev/pts
-  Size: 0               Blocks: 0          IO Block: 1024   directory
-Device: 15h/21d Inode: 1           Links: 2
-Access: (0755/drwxr-xr-x)  Uid: ( 1000/  ubuntu)   Gid: ( 1001/     kvm)
+File: /dev/pts
+Size: 0 Blocks: 0IO Block: 1024 directory
+Device: 15h/21d Inode: 1 Links: 2
+Access: (0755/drwxr-xr-x)Uid: ( 1000/ubuntu) Gid: ( 1001/ kvm)
 Access: 2021-06-26 20:15:24.287113618 +0000
 Modify: 2021-06-26 20:14:20.672000000 +0000
 Change: 2021-06-26 20:15:24.287113618 +0000
  Birth: -
-  File: /dev/ptmx
-  Size: 0               Blocks: 0          IO Block: 4096   character special file
-Device: 6h/6d   Inode: 86          Links: 1     Device type: 5,2
-Access: (0666/crw-rw-rw-)  Uid: ( 1000/  ubuntu)   Gid: ( 1001/     kvm)
+File: /dev/ptmx
+Size: 0 Blocks: 0IO Block: 4096 character special file
+Device: 6h/6d Inode: 86Links: 1 Device type: 5,2
+Access: (0666/crw-rw-rw-)Uid: ( 1000/ubuntu) Gid: ( 1001/ kvm)
 Access: 2021-06-26 20:14:25.900000000 +0000
 Modify: 2021-06-26 20:14:25.900000000 +0000
 Change: 2021-06-26 20:15:24.287113618 +0000
@@ -113,26 +113,26 @@ After `sudo reboot` it does not keep the permisions:
 
 ```bash
 ubuntu@ubuntu:~$ stat /dev/kvm /dev/pts /dev/ptmx
-  File: /dev/kvm
-  Size: 0               Blocks: 0          IO Block: 4096   character special file
-Device: 6h/6d   Inode: 346         Links: 1     Device type: a,e8
-Access: (0600/crw-------)  Uid: (    0/    root)   Gid: (    0/    root)
+File: /dev/kvm
+Size: 0 Blocks: 0IO Block: 4096 character special file
+Device: 6h/6d Inode: 346 Links: 1 Device type: a,e8
+Access: (0600/crw-------)Uid: (0/root) Gid: (0/root)
 Access: 2021-06-26 20:14:26.260000000 +0000
 Modify: 2021-06-26 20:14:26.260000000 +0000
 Change: 2021-06-26 20:14:26.260000000 +0000
  Birth: -
-  File: /dev/pts
-  Size: 0               Blocks: 0          IO Block: 1024   directory
-Device: 15h/21d Inode: 1           Links: 2
-Access: (0755/drwxr-xr-x)  Uid: (    0/    root)   Gid: (    0/    root)
+File: /dev/pts
+Size: 0 Blocks: 0IO Block: 1024 directory
+Device: 15h/21d Inode: 1 Links: 2
+Access: (0755/drwxr-xr-x)Uid: (0/root) Gid: (0/root)
 Access: 2021-06-26 20:14:20.672000000 +0000
 Modify: 2021-06-26 20:14:20.672000000 +0000
 Change: 2021-06-26 20:14:20.672000000 +0000
  Birth: -
-  File: /dev/ptmx
-  Size: 0               Blocks: 0          IO Block: 4096   character special file
-Device: 6h/6d   Inode: 86          Links: 1     Device type: 5,2
-Access: (0666/crw-rw-rw-)  Uid: (    0/    root)   Gid: (    5/     tty)
+File: /dev/ptmx
+Size: 0 Blocks: 0IO Block: 4096 character special file
+Device: 6h/6d Inode: 86Links: 1 Device type: 5,2
+Access: (0666/crw-rw-rw-)Uid: (0/root) Gid: (5/ tty)
 Access: 2021-06-26 20:14:25.900000000 +0000
 Modify: 2021-06-26 20:14:25.900000000 +0000
 Change: 2021-06-26 20:14:25.900000000 +0000
@@ -232,14 +232,19 @@ https://github.com/NixOS/nixpkgs/issues/27930#issuecomment-417943781
 
 About `libvirt`: https://nixos.wiki/wiki/Libvirt
 
+
+#### Requirements for KVM 
+
+- https://wiki.archlinux.org/title/KVM#Checking_support_for_KVM
+
+# Burn cache, as it may make you waste a lot of time!
+
 --mount source="$NIX_CACHE_VOLUME",target=/nix \
 --mount source="$NIX_CACHE_VOLUME",target=/home/pedroregispoar/.cache/ \
 --mount source="$NIX_CACHE_VOLUME",target=/home/pedroregispoar/.config/nix/ \
 --mount source="$NIX_CACHE_VOLUME",target=/home/pedroregispoar/.nix-defexpr/ \
 
 NIX_CACHE_VOLUME='nix-cache-volume'
-
-# Burn cache, as it may make you waste a lot of time!
 
 ```bash
 docker ps --all --quiet | xargs --no-run-if-empty docker stop --time=0 \
@@ -257,7 +262,7 @@ run \
 --rm=true \
 --volume '/sys/fs/cgroup/':'/sys/fs/cgroup':ro \
 docker.nix-community.org/nixpkgs/nix-flakes \
-    <<COMMANDS
+<<COMMANDS
 mkdir --parent --mode=755 ~/.config/nix
 echo 'experimental-features = nix-command flakes ca-references ca-derivations' >> ~/.config/nix/nix.conf
 echo begined
@@ -466,24 +471,24 @@ nix build .#qemu.scripts \
 ubuntu@ubuntu:~$ nix flake show github:ES-Nix/podman-rootless/from-nixpkgs
 github:ES-Nix/podman-rootless/65d5bfda7744618d763c681b31d00cca5c3b9278
 ├───defaultPackage
-│   ├───aarch64-linux: package 'podman-rootless-derivation'
-│   ├───i686-linux: package 'podman-rootless-derivation'
-│   ├───x86_64-darwin: package 'podman-rootless-derivation'
-│   └───x86_64-linux: package 'podman-rootless-derivation'
+│ ├───aarch64-linux: package 'podman-rootless-derivation'
+│ ├───i686-linux: package 'podman-rootless-derivation'
+│ ├───x86_64-darwin: package 'podman-rootless-derivation'
+│ └───x86_64-linux: package 'podman-rootless-derivation'
 ├───devShell
-│   ├───aarch64-linux: development environment 'nix-shell'
-│   ├───i686-linux: development environment 'nix-shell'
-│   ├───x86_64-darwin: development environment 'nix-shell'
-│   └───x86_64-linux: development environment 'nix-shell'
+│ ├───aarch64-linux: development environment 'nix-shell'
+│ ├───i686-linux: development environment 'nix-shell'
+│ ├───x86_64-darwin: development environment 'nix-shell'
+│ └───x86_64-linux: development environment 'nix-shell'
 └───packages
-    ├───aarch64-linux
-    │   └───podman: package 'podman-rootless-derivation'
-    ├───i686-linux
-    │   └───podman: package 'podman-rootless-derivation'
-    ├───x86_64-darwin
-    │   └───podman: package 'podman-rootless-derivation'
-    └───x86_64-linux
-        └───podman: package 'podman-rootless-derivation'
+├───aarch64-linux
+│ └───podman: package 'podman-rootless-derivation'
+├───i686-linux
+│ └───podman: package 'podman-rootless-derivation'
+├───x86_64-darwin
+│ └───podman: package 'podman-rootless-derivation'
+└───x86_64-linux
+└───podman: package 'podman-rootless-derivation'
 ```
 
 `-cpu Haswell-noTSX-IBRS,vmx=on`
@@ -648,28 +653,28 @@ selinux-utils \
 selinux-basics \
 && sudo selinux-activate \
 && sudo \
-    sed \
-    --in-place \
-    's/^SELINUX=permissive/SELINUX=disabled/' \
-    /etc/selinux/config \
+sed \
+--in-place \
+'s/^SELINUX=permissive/SELINUX=disabled/' \
+/etc/selinux/config \
 && sudo reboot
 ```
 
 ```bash
 sudo \
-    sed \
-    --in-place \
-    's/^SELINUX=disabled/SELINUX=permissive/' \
-    /etc/selinux/config \
+sed \
+--in-place \
+'s/^SELINUX=disabled/SELINUX=permissive/' \
+/etc/selinux/config \
 && sudo reboot
 ```
 
 ```bash
 sudo \
-    sed \
-    --in-place \
-    's/^SELINUX=permissive/SELINUX=enforcing/' \
-    /etc/selinux/config \
+sed \
+--in-place \
+'s/^SELINUX=permissive/SELINUX=enforcing/' \
+/etc/selinux/config \
 && sudo reboot
 ```
 
@@ -693,7 +698,7 @@ sed \
 - https://access.redhat.com/discussions/3536621
 - https://serverfault.com/questions/824975/failed-to-get-d-bus-connection-operation-not-permitted
 - https://serverfault.com/questions/936985/cannot-use-systemctl-user-due-to-failed-to-get-d-bus-connection-permission
-- https://man7.org/linux/man-pages/man5/selinux_config.5.html   
+- https://man7.org/linux/man-pages/man5/selinux_config.5.html 
 
 
 
@@ -707,10 +712,10 @@ echo 'Start kvm stuff...' \
 && sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
 && sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
 && sudo \
-    sed \
-    --in-place \
-    's/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
-    /etc/default/grub \
+sed \
+--in-place \
+'s/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+/etc/default/grub \
 && sudo grub-mkconfig -o /boot/grub/grub.cfg \
 && echo 'End cgroup v2 instalation...' \
 && echo 'Start dbus stuff...' \
@@ -723,42 +728,42 @@ echo 'Start kvm stuff...' \
 && echo 'End uidmap instalation!' \
 && echo 'Start SELinux instalation!' \
 && sudo \
-    apt-get \
-    update \
+apt-get \
+update \
 && sudo \
-    apt-get \
-    install \
-    -y \
-    policycoreutils \
-    selinux-utils \
-    selinux-basics \
+apt-get \
+install \
+-y \
+policycoreutils \
+selinux-utils \
+selinux-basics \
 && sudo apt-get -y autoremove \
-&& sudo apt-get -y clean  \
+&& sudo apt-get -y clean\
 && sudo rm -rf /var/lib/apt/lists/* \
 && sudo selinux-activate \
 && sudo \
-    sed \
-    --in-place \
-    's/^SELINUX=permissive/SELINUX=disabled/' \
-    /etc/selinux/config \
+sed \
+--in-place \
+'s/^SELINUX=permissive/SELINUX=disabled/' \
+/etc/selinux/config \
 && echo 'End SELinux instalation!' \
 && nix \
-    profile \
-    install \
-    github:ES-Nix/podman-rootless/from-nixpkgs \
-    nixpkgs#bashInteractive \
-    nixpkgs#conntrack-tools \
-    nixpkgs#coreutils \
-    nixpkgs#file \
-    nixpkgs#findutils \
-    nixpkgs#gnumake \
-    nixpkgs#jq \
-    nixpkgs#minikube \
-    nixpkgs#kubernetes-helm \
-    nixpkgs#ripgrep \
-    nixpkgs#strace \
-    nixpkgs#tree \
-    nixpkgs#which \
+profile \
+install \
+github:ES-Nix/podman-rootless/from-nixpkgs \
+nixpkgs#bashInteractive \
+nixpkgs#conntrack-tools \
+nixpkgs#coreutils \
+nixpkgs#file \
+nixpkgs#findutils \
+nixpkgs#gnumake \
+nixpkgs#jq \
+nixpkgs#minikube \
+nixpkgs#kubernetes-helm \
+nixpkgs#ripgrep \
+nixpkgs#strace \
+nixpkgs#tree \
+nixpkgs#which \
 && nix store gc \
 && sudo reboot
 ```
@@ -834,10 +839,10 @@ echo 'Start kvm stuff...' \
 && sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
 && sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
 && sudo \
-    sed \
-    --in-place \
-    's/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
-    /etc/default/grub \
+sed \
+--in-place \
+'s/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+/etc/default/grub \
 && sudo grub-mkconfig -o /boot/grub/grub.cfg \
 && echo 'End cgroup v2 instalation...' \
 && echo 'Start dbus stuff...' \
@@ -850,41 +855,41 @@ echo 'Start kvm stuff...' \
 && echo 'End uidmap instalation!' \
 && echo 'Start SELinux instalation!' \
 && sudo \
-    apt-get \
-    update \
+apt-get \
+update \
 && sudo \
-    apt-get \
-    install \
-    -y \
-    policycoreutils \
-    selinux-utils \
-    selinux-basics \
+apt-get \
+install \
+-y \
+policycoreutils \
+selinux-utils \
+selinux-basics \
 && sudo apt-get -y autoremove \
-&& sudo apt-get -y clean  \
+&& sudo apt-get -y clean\
 && sudo rm -rf /var/lib/apt/lists/* \
 && sudo selinux-activate \
 && sudo \
-    sed \
-    --in-place \
-    's/^SELINUX=permissive/SELINUX=disabled/' \
-    /etc/selinux/config \
+sed \
+--in-place \
+'s/^SELINUX=permissive/SELINUX=disabled/' \
+/etc/selinux/config \
 && echo 'End SELinux instalation!' \
 && nix \
-    profile \
-    install \
-    github:ES-Nix/podman-rootless/from-nixpkgs \
-    nixpkgs#cni \
-    nixpkgs#cni-plugins \
-    nixpkgs#conntrack-tools \
-    nixpkgs#cri-o \
-    nixpkgs#file \
-    nixpkgs#findutils \
-    nixpkgs#kubernetes-helm \
-    nixpkgs#minikube \
-    nixpkgs#ripgrep \
-    nixpkgs#slirp4netns \
-    nixpkgs#strace \
-    nixpkgs#which \
+profile \
+install \
+github:ES-Nix/podman-rootless/from-nixpkgs \
+nixpkgs#cni \
+nixpkgs#cni-plugins \
+nixpkgs#conntrack-tools \
+nixpkgs#cri-o \
+nixpkgs#file \
+nixpkgs#findutils \
+nixpkgs#kubernetes-helm \
+nixpkgs#minikube \
+nixpkgs#ripgrep \
+nixpkgs#slirp4netns \
+nixpkgs#strace \
+nixpkgs#which \
 && sudo ln -fsv /home/ubuntu/.nix-profile/bin/podman /usr/bin/podman \
 && sudo mkdir -p /usr/lib/cni \
 && sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/portmap /usr/lib/cni/portmap \
@@ -933,11 +938,11 @@ COMMANDS
 ```
 
 ```bash
-    nixpkgs#python3Full \
-    nixpkgs#python3Full.pkgs.pip \
-    nixpkgs#python3Full.pkgs.setuptools \
-    nixpkgs#python3Full.pkgs.virtualenv \
-    nixpkgs#python3Full.pkgs.wheel \
+nixpkgs#python3Full \
+nixpkgs#python3Full.pkgs.pip \
+nixpkgs#python3Full.pkgs.setuptools \
+nixpkgs#python3Full.pkgs.virtualenv \
+nixpkgs#python3Full.pkgs.wheel \
 ```
 
 ```bash
@@ -1049,30 +1054,30 @@ kubectl exec -- --stdin --tty shell-demo -- /bin/bash -c 'ls -al /'
 kubectl exec -- --stdin --tty shell-demo -- /bin/bash -c 'touch /usr/share/nginx/html/foo.txt'
 
 ```bash
-cat << EOF > pod.yalm                                                           
+cat << EOF > pod.yalm 
 apiVersion: v1
 kind: Pod
 metadata:
-  name: shell-demo
+name: shell-demo
 spec:
-  volumes:
-  - name: shared-data
-    emptyDir: {}
-  containers:
-  - name: nginx
-    image: nginx
-    volumeMounts:
-    - name: shared-data
-      mountPath: /data
-  volumes:
-  - hostPath:
-      path: /data
-      type: Directory
-    name: shared-data      
-  hostNetwork: true
-  dnsPolicy: Default
+volumes:
+- name: shared-data
+emptyDir: {}
+containers:
+- name: nginx
+image: nginx
+volumeMounts:
+- name: shared-data
+mountPath: /data
+volumes:
+- hostPath:
+path: /data
+type: Directory
+name: shared-data
+hostNetwork: true
+dnsPolicy: Default
 EOF
-      
+
 kubectl apply -- -f pod.yalm
 
 sleep 5
@@ -1087,24 +1092,24 @@ cat << EOF > pod-test-subpath-hostpath.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: test-subpath-hostpath
-  labels:
-    app: test-subpath-hostpath
+name: test-subpath-hostpath
+labels:
+app: test-subpath-hostpath
 spec:
-  containers:
-  - name: nginx
-    image: ubuntu
-    command:
-        - sleep
-        - "3600"
-    volumeMounts:
-    - name: data
-      mountPath: /data
-  volumes:
-  - hostPath:
-      path: /data/disk0
-      type: Directory
-    name: data
+containers:
+- name: nginx
+image: ubuntu
+command:
+- sleep
+- "3600"
+volumeMounts:
+- name: data
+mountPath: /data
+volumes:
+- hostPath:
+path: /data/disk0
+type: Directory
+name: data
 EOF
 
 kubectl apply -- -f pod-test-subpath-hostpath.yaml
@@ -1120,25 +1125,25 @@ cat << EOF > myVolumes-Pod.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: myvolumes-pod
+name: myvolumes-pod
 spec:
-  containers:
-  - image: alpine
-    imagePullPolicy: IfNotPresent
-    name: myvolumes-container
-    
-    command: [    'sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
-    
-    volumeMounts:
-    - mountPath: /home/ubuntu/volume-test/
-      name: demo-volume
-  volumes:
-  - name: demo-volume
-    hostPath:
-      # directory location on host
-      path: /home/ubuntu/volume-test/
+containers:
+- image: alpine
+imagePullPolicy: IfNotPresent
+name: myvolumes-container
+
+command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
+
+volumeMounts:
+- mountPath: /home/ubuntu/volume-test/
+name: demo-volume
+volumes:
+- name: demo-volume
+hostPath:
+# directory location on host
+path: /home/ubuntu/volume-test/
 EOF
-      
+
 kubectl create -- -f myVolumes-Pod.yaml
 kubectl get pods
 kubectl exec myvolumes-pod -- -i -t -- /bin/sh -c 'echo text-abc > /demo/textfile.txt'
@@ -1153,26 +1158,26 @@ cat << EOF > example-pod.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: test-pd
+name: test-pd
 spec:
-  containers:
-  - image: alpine
-    imagePullPolicy: IfNotPresent
-    name: volume-container    
-    command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
+containers:
+- image: alpine
+imagePullPolicy: IfNotPresent
+name: volume-container
+command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
 
-    volumeMounts:
-    - mountPath: /code
-      name: test-volume
-  volumes:
-  - name: test-volume
-    hostPath:
-      # directory location on host
-      path: /home/ubuntu/volume-test
-      # this field is optional
-      type: Directory
+volumeMounts:
+- mountPath: /code
+name: test-volume
+volumes:
+- name: test-volume
+hostPath:
+# directory location on host
+path: /home/ubuntu/volume-test
+# this field is optional
+type: Directory
 EOF
-      
+
 kubectl create -- -f example-pod.yaml
 kubectl get pods
 kubectl exec volume-container -- -i -t -- /bin/sh -c 'echo text-abc > demo/textfile'
@@ -1189,30 +1194,30 @@ cat << EOF > my-lamp-site.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: my-lamp-site
+name: my-lamp-site
 spec:
-    containers:
-    - name: mysql
-      image: mysql
-      env:
-      - name: MYSQL_ROOT_PASSWORD
-        value: "rootpasswd"
-      volumeMounts:
-      - mountPath: /var/lib/mysql
-        name: site-data
-        subPath: mysql
-    - name: php
-      image: php:7.0-apache
-      volumeMounts:
-      - mountPath: /var/www/html
-        name: site-data
-        subPath: html
-    volumes:
-    - name: site-data
-      persistentVolumeClaim:
-        claimName: my-lamp-site-data
+containers:
+- name: mysql
+image: mysql
+env:
+- name: MYSQL_ROOT_PASSWORD
+value: "rootpasswd"
+volumeMounts:
+- mountPath: /var/lib/mysql
+name: site-data
+subPath: mysql
+- name: php
+image: php:7.0-apache
+volumeMounts:
+- mountPath: /var/www/html
+name: site-data
+subPath: html
+volumes:
+- name: site-data
+persistentVolumeClaim:
+claimName: my-lamp-site-data
 EOF
-      
+
 kubectl create -- -f my-lamp-site.yaml
 
 kubectl get pods
@@ -1231,27 +1236,27 @@ cat << EOF > my-lamp-site.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: my-alpine
+name: my-alpine
 spec:
-    containers:
-    - name: mysql
-      image: alpine
-      volumeMounts:
-      - mountPath: /var/lib/mysql
-        name: site-data
-        subPath: mysql
-    - name: alpine
-      image: alpine:3.14.0
-      volumeMounts:
-      - mountPath: /var/www/html
-        name: site-data
-        subPath: html
-    volumes:
-    - name: site-data
-      persistentVolumeClaim:
-        claimName: my-lamp-site-data
+containers:
+- name: mysql
+image: alpine
+volumeMounts:
+- mountPath: /var/lib/mysql
+name: site-data
+subPath: mysql
+- name: alpine
+image: alpine:3.14.0
+volumeMounts:
+- mountPath: /var/www/html
+name: site-data
+subPath: html
+volumes:
+- name: site-data
+persistentVolumeClaim:
+claimName: my-lamp-site-data
 EOF
-      
+
 kubectl create -- -f my-lamp-site.yaml
 
 kubectl get pods
@@ -1271,26 +1276,26 @@ cat << EOF > example-pod.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: test-volume
+name: test-volume
 spec:
-  containers:
-  - image: alpine
-    imagePullPolicy: IfNotPresent
-    name: volume-container    
-    command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
+containers:
+- image: alpine
+imagePullPolicy: IfNotPresent
+name: volume-container
+command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
 
-    volumeMounts:
-    - mountPath: /code
-      name: test-volume
-  volumes:
-  - name: test-volume
-    hostPath:
-      # directory location on host
-      path: /home
-      # this field is optional
-      type: Directory
+volumeMounts:
+- mountPath: /code
+name: test-volume
+volumes:
+- name: test-volume
+hostPath:
+# directory location on host
+path: /home
+# this field is optional
+type: Directory
 EOF
-      
+
 kubectl create -- -f example-pod.yaml
 kubectl get pods
 kubectl exec test-volume -- -i -t -- /bin/sh -c 'echo text-abc > /code/textfile'
@@ -1304,29 +1309,29 @@ cat << EOF > example-pod-with-volume.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: pod1
+name: pod1
 spec:
-  containers:
-  - name: container1
-    env:
-    - name: POD_NAME
-      valueFrom:
-        fieldRef:
-          apiVersion: v1
-          fieldPath: metadata.name
-    image: busybox
-    command: [ "sh", "-c", "while [ true ]; do echo 'Hello'; sleep 3; done | tee -a /logs/hello.txt" ]
-    volumeMounts:
-    - name: workdir1
-      mountPath: /home/ubuntu/sandbox/sandbox
-      subPath: sandbox
-  restartPolicy: Never
-  volumes:
-  - name: workdir1
-    hostPath:
-      path: /home/ubuntu/sandbox/sandbox
+containers:
+- name: container1
+env:
+- name: POD_NAME
+valueFrom:
+fieldRef:
+apiVersion: v1
+fieldPath: metadata.name
+image: busybox
+command: [ "sh", "-c", "while [ true ]; do echo 'Hello'; sleep 3; done | tee -a /logs/hello.txt" ]
+volumeMounts:
+- name: workdir1
+mountPath: /home/ubuntu/sandbox/sandbox
+subPath: sandbox
+restartPolicy: Never
+volumes:
+- name: workdir1
+hostPath:
+path: /home/ubuntu/sandbox/sandbox
 EOF
-      
+
 minikube kubectl create -- -f example-pod-with-volume.yaml
 minikube kubectl get pods
 minikube kubectl exec pod1 -- -i -t -- /bin/sh -c 'ls -al /home/ubuntu/sandbox/sandbox'
@@ -1343,26 +1348,26 @@ cat << EOF > projected.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: test-projected-volume
+name: test-projected-volume
 spec:
-  containers:
-  - name: test-projected-volume
-    image: busybox
-    args:
-    - sleep
-    - "86400"
-    volumeMounts:
-    - name: all-in-one
-      mountPath: "/projected-volume"
-      readOnly: false
-  volumes:
-  - name: all-in-one
-    projected:
-      sources:
-      - secret:
-          name: user
-      - secret:
-          name: pass
+containers:
+- name: test-projected-volume
+image: busybox
+args:
+- sleep
+- "86400"
+volumeMounts:
+- name: all-in-one
+mountPath: "/projected-volume"
+readOnly: false
+volumes:
+- name: all-in-one
+projected:
+sources:
+- secret:
+name: user
+- secret:
+name: pass
 EOF
 
 # Create files containing the username and password:
@@ -1390,12 +1395,12 @@ cat << EOF > projected.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: test-pod
+name: test-pod
 spec:
-  containers:
-  - name: test-pod
-    image: busybox
-    command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
+containers:
+- name: test-pod
+image: busybox
+command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
 EOF
 
 minikube kubectl create -- -f projected.yaml
@@ -1415,23 +1420,23 @@ cat << EOF > pod-volume.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: test-pod-volume
+name: test-pod-volume
 spec:
-  containers:
-  - name: test-pod-volume
-    image: busybox
-    command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
-    volumeMounts:
-    - name: all-in-one
-      mountPath: "/home"
-      readOnly: false
-  volumes:
-  - name: all-in-one
-    hostPath:
-      # directory location on host
-      path: /home/ubuntu/sandbox/sandbox
-      # this field is optional
-      type: Directory
+containers:
+- name: test-pod-volume
+image: busybox
+command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
+volumeMounts:
+- name: all-in-one
+mountPath: "/home"
+readOnly: false
+volumes:
+- name: all-in-one
+hostPath:
+# directory location on host
+path: /home/ubuntu/sandbox/sandbox
+# this field is optional
+type: Directory
 EOF
 
 minikube kubectl create -- -f pod-volume.yaml
@@ -1469,7 +1474,7 @@ minikube start --driver=none
 From: https://minikube.sigs.k8s.io/docs/drivers/none/#usage
 
 
-#### Trying the podman socket  
+#### Trying the podman socket
 
 nix profile install nixpkgs#docker
 
@@ -1607,18 +1612,18 @@ echo 'Start instalation!' \
 && sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
 && sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
 && sudo \
-      sed \
-      --in-place \
-      's/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
-    /etc/default/grub \
+sed \
+--in-place \
+'s/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+/etc/default/grub \
 && sudo grub-mkconfig -o /boot/grub/grub.cfg \
 && echo 'End cgroup v2 instalation...' \
 && echo 'Start ip_forward stuff...' \
 && sudo \
-      sed \
-      -i \
-      '/net.ipv4.ip_forward/s/^#*//g' \
-      /etc/sysctl.conf \
+sed \
+-i \
+'/net.ipv4.ip_forward/s/^#*//g' \
+/etc/sysctl.conf \
 && echo 'End ip_forward stuff...' \
 && echo 'Start dbus stuff...' \
 && sudo apt-get update \
@@ -1629,9 +1634,9 @@ echo 'Start instalation!' \
 && sudo apt-get install -y uidmap \
 && echo 'End uidmap stuff...' \
 && nix \
-    profile \
-    install \
-    github:ES-Nix/podman-rootless/from-nixpkgs \
+profile \
+install \
+github:ES-Nix/podman-rootless/from-nixpkgs \
 && nix store gc \
 && sudo reboot
 ```
@@ -1759,18 +1764,18 @@ echo 'Start instalation!' \
 && sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
 && sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
 && sudo \
-      sed \
-      --in-place \
-      's/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
-    /etc/default/grub \
+sed \
+--in-place \
+'s/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+/etc/default/grub \
 && sudo grub-mkconfig -o /boot/grub/grub.cfg \
 && echo 'End cgroup v2 instalation...' \
 && echo 'Start ip_forward stuff...' \
 && sudo \
-      sed \
-      -i \
-      '/net.ipv4.ip_forward/s/^#*//g' \
-      /etc/sysctl.conf \
+sed \
+-i \
+'/net.ipv4.ip_forward/s/^#*//g' \
+/etc/sysctl.conf \
 && echo 'End ip_forward stuff...' \
 && echo 'Start dbus stuff...' \
 && sudo apt-get update \
@@ -1781,9 +1786,9 @@ echo 'Start instalation!' \
 && sudo apt-get install -y uidmap \
 && echo 'End uidmap stuff...' \
 && nix \
-    profile \
-    install \
-    github:ES-Nix/podman-rootless/from-nixpkgs \
+profile \
+install \
+github:ES-Nix/podman-rootless/from-nixpkgs \
 && nix store gc \
 && sudo reboot
 COMMANDS
@@ -1891,7 +1896,7 @@ k3s kubectl get pods
 
 
 
-cat << EOF >  ~/foo
+cat << EOF >~/foo
 [Unit]
 Description=k3s (Rootless)
 
@@ -1941,7 +1946,7 @@ cat << EOF > ~/.kube/sa.yml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: svcs-acct-dply #any name you'd like
+name: svcs-acct-dply #any name you'd like
 EOF
 
 kubectl create -f ~/.kube/sa.yml
@@ -1969,22 +1974,22 @@ db-user-pass \
 apiVersion: v1
 clusters:
 - cluster:
-    certificate-authority: PATH_TO_SOMEWHERE/.minikube/ca.crt
-    server: https://172.17.0.3:8443
-  name: minikube
+certificate-authority: PATH_TO_SOMEWHERE/.minikube/ca.crt
+server: https://172.17.0.3:8443
+name: minikube
 contexts:
 - context:
-    cluster: minikube
-    user: minikube
-  name: minikube
+cluster: minikube
+user: minikube
+name: minikube
 current-context: minikube
 kind: Config
 preferences: {}
 users:
 - name: minikube
-  user:
-    client-certificate: PATH_TO_SOMEWHERE/client.crt
-    client-key: PATH_TO_SOMEWHERE/client.key
+user:
+client-certificate: PATH_TO_SOMEWHERE/client.crt
+client-key: PATH_TO_SOMEWHERE/client.key
 ```
 
 
@@ -2002,18 +2007,18 @@ echo 'Start instalation!' \
 && sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
 && sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
 && sudo \
-      sed \
-      --in-place \
-      's/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
-    /etc/default/grub \
+sed \
+--in-place \
+'s/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+/etc/default/grub \
 && sudo grub-mkconfig -o /boot/grub/grub.cfg \
 && echo 'End cgroup v2 instalation...' \
 && echo 'Start ip_forward stuff...' \
 && sudo \
-      sed \
-      -i \
-      '/net.ipv4.ip_forward/s/^#*//g' \
-      /etc/sysctl.conf \
+sed \
+-i \
+'/net.ipv4.ip_forward/s/^#*//g' \
+/etc/sysctl.conf \
 && echo 'End ip_forward stuff...' \
 && echo 'Start dbus stuff...' \
 && sudo apt-get update \
@@ -2024,20 +2029,20 @@ echo 'Start instalation!' \
 && sudo apt-get install -y uidmap \
 && echo 'End uidmap stuff...' \
 && nix \
-    profile \
-    install \
-    github:ES-Nix/podman-rootless/from-nixpkgs \
-    nixpkgs#cni \
-    nixpkgs#cni-plugins \
-    nixpkgs#conntrack-tools \
-    nixpkgs#fuse-overlayfs \
-    nixpkgs#kubernetes-helm \
-    nixpkgs#kvm \
-    nixpkgs#minikube \
-    nixpkgs#ripgrep \
-    nixpkgs#slirp4netns \
-    nixpkgs#tree \
-    nixpkgs#which \
+profile \
+install \
+github:ES-Nix/podman-rootless/from-nixpkgs \
+nixpkgs#cni \
+nixpkgs#cni-plugins \
+nixpkgs#conntrack-tools \
+nixpkgs#fuse-overlayfs \
+nixpkgs#kubernetes-helm \
+nixpkgs#kvm \
+nixpkgs#minikube \
+nixpkgs#ripgrep \
+nixpkgs#slirp4netns \
+nixpkgs#tree \
+nixpkgs#which \
 && sudo ln -fsv /home/ubuntu/.nix-profile/bin/podman /usr/bin/podman \
 && sudo mkdir -p /usr/lib/cni \
 && sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/portmap /usr/lib/cni/portmap \
@@ -2049,7 +2054,7 @@ echo 'Start instalation!' \
 --preserve-env \
 su \
 -c \
-"echo $USER ALL=\(ALL\) NOPASSWD: $(readlink $(which podman)) >> /etc/sudoers" \
+"echo $USER ALL=\(ALL\) NOPASSWD:SETENV: $(readlink $(which podman)) >> /etc/sudoers" \
 && echo 'End bypass sudo podman stuff...' \
 && nix store gc \
 && sudo reboot
@@ -2099,6 +2104,8 @@ file /usr/lib/kvm2 | rg -e 'kvm'
 minikube \
 start \
 --driver=kvm2
+
+
 
 #### 
 minikube delete
@@ -2216,6 +2223,7 @@ nginxinc/nginx-unprivileged \
 && podman stop container-nginx-unprivileged \
 && podman rm container-nginx-unprivileged
 ```
+From: Missed it, TODO, finde the post. Related: [Publishing Ports](https://podman.io/getting-started/network#publishing-ports) 
 
 
 #### 
@@ -2261,7 +2269,7 @@ sudo \
 --preserve-env \
 su \
 -c \
-"echo $USER ALL=\(ALL\) NOPASSWD: $(readlink $(which podman)) >> /etc/sudoers"
+"echo $USER ALL=\(ALL\) NOPASSWD:SETENV: $(readlink $(which podman)) >> /etc/sudoers"
 
 sudo ln -fsv /home/ubuntu/.nix-profile/bin/podman /usr/bin/podman
 sudo ln -fsv "$(nix eval --raw nixpkgs#cri-o)"/bin/crio /usr/lib/crio
@@ -2285,7 +2293,7 @@ sudo \
 --preserve-env \
 su \
 -c \
-"echo $USER ALL=\(ALL\) NOPASSWD: $(readlink $(which podman)) >> /etc/sudoers"
+"echo $USER ALL=\(ALL\) NOPASSWD:SETENV: $(readlink $(which podman)) >> /etc/sudoers"
 
 sudo ln -fsv /home/ubuntu/.nix-profile/bin/podman /usr/bin/podman
 sudo ln -fsv "$(nix eval --raw nixpkgs#cri-o)"/bin/crio /usr/lib/crio
@@ -2299,10 +2307,10 @@ echo 'Start cgroup v2 instalation...' \
 && sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
 && sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
 && sudo \
-      sed \
-      --in-place \
-      's/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
-    /etc/default/grub \
+sed \
+--in-place \
+'s/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+/etc/default/grub \
 && sudo grub-mkconfig -o /boot/grub/grub.cfg \
 && echo 'End cgroup v2 instalation...'
 ```
@@ -2328,3 +2336,71 @@ minikube start --driver=podman --container-runtime=cri-o
 #### In podman 3.4?
 podman pod create --userns=keep-id --name dan1 \
 && podman run --pod dan1 fedora id
+
+
+### Volume mount
+
+```bash
+kill -9 $(pidof qemu-system-x86_64) || true \
+&& result/refresh || nix build .#qemu.vm \
+&& (result/run-vm-kvm < /dev/null &) \
+&& { result/ssh-vm << COMMANDS
+test -d /nix || sudo mkdir --mode=0755 /nix \
+&& sudo chown "\$USER": /nix \
+&& SHA256=eccef9a426fd8d7fa4c7e4a8c1191ba1cd00a4f7 \
+&& curl -fsSL https://raw.githubusercontent.com/ES-Nix/get-nix/"\$SHA256"/get-nix.sh | sh \
+&& . "\$HOME"/.nix-profile/etc/profile.d/nix.sh \
+&& . ~/."\$(ps -ocomm= -q \$\$)"rc \
+&& export TMPDIR=/tmp \
+&& export OLD_NIX_PATH="\$(readlink -f \$(which nix))" \
+&& nix-shell -I nixpkgs=channel:nixos-21.05 --keep OLD_NIX_PATH --packages nixFlakes --run 'nix-env --uninstall \$OLD_NIX_PATH && nix-collect-garbage --delete-old && nix profile install nixpkgs#nixFlakes' \
+&& sudo rm -frv /nix/store/*-nix-2.3.* \
+&& unset OLD_NIX_PATH \
+&& nix-collect-garbage --delete-old \
+&& nix store gc \
+&& nix flake --version
+COMMANDS
+}
+```
+
+```bash
+export VOLUME_MOUNT_PATH=/home/ubuntu/code
+
+cat <<WRAP >> "$HOME"/.bashrc
+sudo mount -t 9p \
+-o trans=virtio,access=any,cache=none,version=9p2000.L,cache=none,msize=262144,rw \
+hostshare \
+"$VOLUME_MOUNT_PATH"
+
+cd "$VOLUME_MOUNT_PATH"
+WRAP
+
+test -d "$VOLUME_MOUNT_PATH" || sudo mkdir -p "$VOLUME_MOUNT_PATH"
+
+sudo mount -t 9p \
+-o trans=virtio,access=any,cache=none,version=9p2000.L,cache=none,msize=262144,rw \
+hostshare "$VOLUME_MOUNT_PATH"
+
+OLD_UID=$(getent passwd "$(id -u)" | cut -f3 -d:)
+NEW_UID=$(stat -c "%u" "$VOLUME_MOUNT_PATH")
+
+OLD_GID=$(getent group "$(id -g)" | cut -f3 -d:)
+NEW_GID=$(stat -c "%g" "$VOLUME_MOUNT_PATH")
+
+
+if [ "$OLD_UID" != "$NEW_UID" ]; then
+    echo "Changing UID of $(id) from $OLD_UID to $NEW_UID"
+    #sudo usermod -u "$NEW_UID" -o $(id -un $(id -u))
+    sudo find / -xdev -uid "$OLD_UID" -exec chown -h "$NEW_UID" {} \;
+fi
+
+if [ "$OLD_GID" != "$NEW_GID" ]; then
+    echo "Changing GID of $(id) from $OLD_GID to $NEW_GID"
+    #sudo groupmod -g "$NEW_GID" -o $(id -gn $(id -u))
+    sudo find / -xdev -group "$OLD_GID" -exec chgrp -h "$NEW_GID" {} \;
+fi
+
+sudo su -c "sed -i -e \"s/^\(ubuntu:[^:]\):[0-9]*:[0-9]*:/\1:${NEW_UID}:${NEW_GID}:/\" /etc/passwd && sed -i \"/^ubuntu/s/:[0-9]*:/:${NEW_GID}:/g\" /etc/group && reboot"
+
+unset VOLUME_MOUNT_PATH
+```
