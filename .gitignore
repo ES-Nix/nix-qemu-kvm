@@ -4,3 +4,4 @@
 result
 userdata.qcow2.backup
 disk.qcow2.backup
+*.backup
