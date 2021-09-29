@@ -63,6 +63,10 @@ rec {
 
   # Generate the initial user data disk. This contains extra configuration
   # for the VM.
+  #
+  # https://gist.github.com/leogallego/a614c61457ed22cb1d960b32de4a1b01#file-ubuntu-cloud-virtualbox-sh-L44-L57
+  # https://stafwag.github.io/blog/blog/2019/03/03/howto-use-centos-cloud-images-with-cloud-init/
+  # https://fabianlee.org/2020/02/23/kvm-testing-cloud-init-locally-using-kvm-for-an-ubuntu-cloud-image/
   userdata = pkgs.runCommand
     "userdata.qcow2"
     { buildInputs = [ pkgs.cloud-utils pkgs.yj pkgs.qemu ]; }

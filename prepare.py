@@ -21,15 +21,15 @@ log("booting VM")
 qemu = pexpect.spawn(
         sys.argv[1],
         sys.argv[2:],
-        logfile = sys.stdout,
-        encoding = 'utf8',
-        timeout = 1000,
+        logfile=sys.stdout,
+        encoding='utf8',
+        timeout=1000,
         )
 
-# work around a bug in the image
-qemu.expect(u"error: no such device: root.")
-# Yes, password is hardcoded here too!
-qemu.sendline("b")
+# # work around a bug in the image
+# qemu.expect(u"error: no such device: root.")
+# # Yes, password is hardcoded here too!
+# qemu.sendline("b")
 
 log("waiting on boot to finish")
 
@@ -39,7 +39,7 @@ log("logging in")
 
 qemu.sendline("ubuntu")
 qemu.expect(u"Password:")
-qemu.sendline("b")
+qemu.sendline("ubuntu")
 qemu.expect(u"ubuntu@ubuntu")
 
 log("entering qemu menu")
