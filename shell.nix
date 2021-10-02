@@ -36,6 +36,50 @@ let
       && result/backupCurrentState nix-flake
             }
 
+            prepares-volume() {
+              test -f result/run-vm-kvm || nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.vm
+
+              pidof qemu-system-x86_64 || (result/run-vm-kvm < /dev/null &)
+
+              result/ssh-vm << COMMANDS
+              export VOLUME_MOUNT_PATH=/home/ubuntu/code
+
+              sudo chmod 0700 "\$HOME"
+              sudo chown ubuntu: "\$HOME"
+              stat ~
+
+              cat <<WRAP >> "\$HOME"/.bashrc
+              cd "\$VOLUME_MOUNT_PATH"
+      WRAP
+
+              test -d "\$VOLUME_MOUNT_PATH" || sudo mkdir -p "\$VOLUME_MOUNT_PATH"
+
+              touch -d '1970-01-01 00:00:00' /home/ubuntu/.Xauthority
+
+              OLD_UID=\$(getent passwd "\$(id -u)" | cut -f3 -d:)
+              NEW_UID=\$(stat -c "%u" "\$VOLUME_MOUNT_PATH")
+
+              OLD_GID=\$(getent group "\$(id -g)" | cut -f3 -d:)
+              NEW_GID=\$(stat -c "%g" "\$VOLUME_MOUNT_PATH")
+              unset VOLUME_MOUNT_PATH
+      COMMANDS
+            }
+
+            troubleshoot() {
+
+              { result/ssh-vm << COMMANDS
+              OLD_UID=\$(getent passwd "\$(id -u)" | cut -f3 -d:)
+              NEW_UID=\$(stat -c "%u" "\$VOLUME_MOUNT_PATH")
+
+              OLD_GID=\$(getent group "\$(id -g)" | cut -f3 -d:)
+              NEW_GID=\$(stat -c "%g" "\$VOLUME_MOUNT_PATH")
+
+              sudo su -c "sed -e \"s/^\(ubuntu:[^:]\):[0-9]*:[0-9]*:/\1:''${NEW_UID}:''${NEW_GID}:/\" /etc/passwd && sed \"/^ubuntu/s/:[0-9]*:/:''${NEW_GID}:/g\" /etc/group && reboot"
+
+      COMMANDS
+            }
+            }
+
             fresh-ssh-vm() {
 
               backup_name=$1
@@ -170,5 +214,10 @@ mkShell {
     alias off-vm-ssh='result/ssh-vm sudo poweroff'
     alias abc='echo ABC'
     alias fssh='fresh-ssh-vm'
+    alias svm='ssh-vm'
+
+    # Usefull
+    # create-nix-flake-backup
+    # rm disk.qcow2 userdata.qcow2
   '';
 }

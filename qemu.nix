@@ -57,7 +57,7 @@ rec {
     # Source of magic number msize=262144
     # https://askubuntu.com/questions/548208/sharing-folder-with-vm-through-libvirt-9p-permission-denied/1259833#1259833
     mounts = [
-      [ "hostshare" "/code" "9p" "defaults,trans=virtio,access=any,version=9p2000.L,cache=none,msize=262144,rw" ]
+      [ "hostshare" "/home/ubuntu/code" "9p" "defaults,trans=virtio,access=any,version=9p2000.L,cache=none,msize=262144,rw" ]
     ];
   };
 
@@ -67,6 +67,7 @@ rec {
   # https://gist.github.com/leogallego/a614c61457ed22cb1d960b32de4a1b01#file-ubuntu-cloud-virtualbox-sh-L44-L57
   # https://stafwag.github.io/blog/blog/2019/03/03/howto-use-centos-cloud-images-with-cloud-init/
   # https://fabianlee.org/2020/02/23/kvm-testing-cloud-init-locally-using-kvm-for-an-ubuntu-cloud-image/
+  # https://serverfault.com/questions/369872/run-a-bash-script-after-ec2-instance-boots?rq=1
   userdata = pkgs.runCommand
     "userdata.qcow2"
     { buildInputs = [ pkgs.cloud-utils pkgs.yj pkgs.qemu ]; }
