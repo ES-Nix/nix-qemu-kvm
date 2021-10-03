@@ -156,6 +156,10 @@ let
     result/clean_all
   '';
 
+  backupCurrentState = writeShellScriptBin "backup-current-state" ''
+    result/backupCurrentState
+  '';
+
   prepares-volume = writeShellScriptBin "prepares-volume" ''
         rm -fr disk.qcow2 userdata.qcow2
 
@@ -266,6 +270,7 @@ mkShell {
     prepares-volume
     clean-all
     ssh-vm-volume-dev-test
+    backupCurrentState
 
   ];
 
