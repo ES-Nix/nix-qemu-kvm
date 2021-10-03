@@ -101,6 +101,8 @@ rec {
       -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:22"
       -cpu Haswell-noTSX-IBRS,vmx=on
       -cpu host
+      -fsdev local,security_model=passthrough,id=fsdev0,path="\$(pwd)"
+      -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare
     )
 
     set -x
@@ -156,8 +158,10 @@ rec {
       fi
       # And finally boot qemu with a bunch of arguments
       args=(
-        # Share the nix folder with the guest
-        -virtfs "local,security_model=none,id=fsdev0,path=\$PWD,readonly=off,mount_tag=hostshare"
+        #
+        #-virtfs "local,security_model=none,id=fsdev0,path=\$(pwd),readonly=off,mount_tag=hostshare"
+        -fsdev local,security_model=passthrough,id=fsdev0,path="\$(pwd)"
+        -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare
       )
       echo "Starting VM."
       echo "To login: ubuntu / ubuntu"
