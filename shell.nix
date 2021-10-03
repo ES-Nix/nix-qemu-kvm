@@ -158,7 +158,7 @@ let
 
   prepares-volume = writeShellScriptBin "prepares-volume" ''
         rm -fr disk.qcow2 userdata.qcow2
-        nix build .#qemu.vm
+
         test -f result/run-vm-kvm || nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.vm
 
         pidof qemu-system-x86_64 || (result/run-vm-kvm < /dev/null &)
