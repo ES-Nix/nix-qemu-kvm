@@ -150,7 +150,15 @@ let
             }
 
             ssh-vm() {
-              # kill -9 $(pidof qemu-system-x86_64) 1>/dev/null 2>/dev/null || true \
+              pidof qemu-system-x86_64 \
+              || test -d result \
+              || nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
+              && pidof qemu-system-x86_64 \
+              || (result/run-vm-kvm < /dev/null &) \
+              && result/ssh-vm
+            }
+
+            ssh-vm-dev() {
               pidof qemu-system-x86_64 || test -d result || nix build .#qemu.vm \
               && pidof qemu-system-x86_64 || (result/run-vm-kvm < /dev/null &) \
               && result/ssh-vm
