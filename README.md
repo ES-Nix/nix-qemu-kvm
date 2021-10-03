@@ -2404,3 +2404,94 @@ sudo su -c "sed -i -e \"s/^\(ubuntu:[^:]\):[0-9]*:[0-9]*:/\1:${NEW_UID}:${NEW_GI
 
 unset VOLUME_MOUNT_PATH
 ```
+
+```bash
+nix \
+develop \
+github:ES-Nix/nix-qemu-kvm/dev \
+--command \
+create-nix-flake-backup \
+&& prepares-volume \
+&& ssh-vm
+```
+
+
+###
+
+ssh-vm-ubuntu-volume() {
+  test -d result \
+  || nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
+  && ${pkgs.procps}/bin/pidof qemu-system-x86_64 \
+  || (result/run-vm-kvm < /dev/null &) \
+  && ssh-vm
+}
+
+ssh-vm-ubuntu-volume-dev() {
+  ${pkgs.procps}/bin/pidof qemu-system-x86_64 \
+  || test -d result \
+  || nix build .#qemu.vm \
+  && (result/run-vm-kvm < /dev/null &)
+
+  ${pkgs.procps}/bin/pidof qemu-system-x86_64 \
+  || (result/run-vm-kvm < /dev/null &) \
+  && result/ssh-vm
+}
+
+
+`findmnt -rno SOURCE,TARGET "$1"`
+https://serverfault.com/a/901858
+
+
+
+```bash
+nix \
+develop
+```
+
+```bash
+vm-kill; \
+prepares-volume \
+&& ssh-vm
+```
+
+
+```bash
+nix \
+develop \
+--refresh \
+github:ES-Nix/nix-qemu-kvm/dev
+```
+
+
+```bash
+nix \
+develop \
+github:ES-Nix/nix-qemu-kvm/dev \
+--command \
+vm-kill; \
+prepares-volume \
+&& ssh-vm
+```
+
+```bash
+nix \
+develop \
+github:ES-Nix/nix-qemu-kvm/dev \
+--command \
+ssh-vm; prepares-volume && ssh-vm
+```
+
+
+```bash
+rm -f result \
+&& nix store gc --verbose \
+&& nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
+&& nix develop --refresh --command bash -c 'vm-kill; ssh-vm-dev'
+```
+
+```bash
+rm -f result \
+&& nix store gc --verbose \
+&& nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
+&& nix develop --refresh --command bash -c 'vm-kill; prepares-volume && ssh-vm-dev'
+```
