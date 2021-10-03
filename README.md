@@ -2520,6 +2520,6 @@ Broken:
 rm -fv result *.qcow2*; \
 nix store gc --verbose \
 && nix build --refresh github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
-&& nix develop --refresh github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
---command bash -c 'result/prepares-volume && result/ssh-vm'
+&& nix develop --refresh github:ES-Nix/nix-qemu-kvm/dev \
+--command bash -c 'prepares-volume && ssh-vm'
 ```
