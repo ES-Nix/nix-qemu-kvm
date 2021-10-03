@@ -2515,7 +2515,7 @@ bash \
 'vm-kill; prepares-volume && ssh-vm-dev'
 ```
 
-
+Broken:
 ```bash
 rm -fv result *.qcow2*; \
 nix store gc --verbose \

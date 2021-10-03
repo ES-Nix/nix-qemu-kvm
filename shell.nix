@@ -186,11 +186,6 @@ let
         export OLD_GID=\$(getent group "\$(id -g)" | cut -f3 -d:)
         export NEW_GID=\$(stat -c "%g" "\$VOLUME_MOUNT_PATH")
 
-#        echo \$OLD_UID
-#        echo \$NEW_UID
-#        echo \$OLD_GID
-#        echo \$NEW_GID
-
         if [ "\$OLD_UID" != "\$NEW_UID" ]; then
             echo "Changing UID of \$(id -un) from \$OLD_UID to \$NEW_UID"
             #sudo usermod -u "\$NEW_UID" -o \$(id -un \$(id -u))

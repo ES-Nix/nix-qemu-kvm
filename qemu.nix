@@ -267,7 +267,7 @@ rec {
       cp --verbose ${sshClient} $out/ssh-vm
       chmod +x $out/ssh-vm
 
-      #
+      # Broken!
       cat <<WRAP > $out/prepares-volume
       #!${pkgs.stdenv.shell}
       # set -euo pipefail
