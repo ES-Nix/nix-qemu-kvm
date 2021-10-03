@@ -20,6 +20,10 @@
           pkgs = nixpkgs.legacyPackages.${system};
         };
 
+#        defaultPackage = import ./qemu.nix {
+#          pkgs = nixpkgs.legacyPackages.${system};
+#        };
+
         devShell = import ./shell.nix { inherit pkgs; };
       }
     );

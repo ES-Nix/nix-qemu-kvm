@@ -403,6 +403,14 @@ rec {
       WRAP
       chmod +x $out/resetToBackup
 
+      #
+      cat <<WRAP > $out/ubuntu-vm-volume
+      #!${pkgs.stdenv.shell}
+      # set -euo pipefail
+
+      WRAP
+      chmod +x $out/ubuntu-vm-volume
+
     '';
 
   # Prepare the VM snapshot for faster resume.
