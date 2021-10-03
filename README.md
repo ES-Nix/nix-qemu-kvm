@@ -2495,3 +2495,9 @@ rm -f result \
 && nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
 && nix develop --refresh --command bash -c 'vm-kill; prepares-volume && ssh-vm-dev'
 ```
+
+```bash
+rm -fv result *.qcow2*; \
+nix store gc --verbose \
+&& nix develop --refresh --command bash -c 'vm-kill; prepares-volume && ssh-vm-dev'
+```

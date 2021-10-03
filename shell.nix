@@ -158,7 +158,7 @@ let
 
   prepares-volume = writeShellScriptBin "prepares-volume" ''
               rm -fr disk.qcow2 userdata.qcow2
-
+              nix build .#qemu.vm
               test -f result/run-vm-kvm || nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.vm
 
               pidof qemu-system-x86_64 || (result/run-vm-kvm < /dev/null &)
@@ -225,19 +225,19 @@ let
       '';
 
   ssh-vm = writeShellScriptBin "ssh-vm" ''
-    pidof qemu-system-x86_64 \
-    || test -d result \
+    test -d result \
     || nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
-    && pidof qemu-system-x86_64 \
+
+    pidof qemu-system-x86_64 \
     || (result/run-vm-kvm < /dev/null &) \
     && result/ssh-vm
   '';
 
   ssh-vm-dev = writeShellScriptBin "ssh-vm-dev" ''
+
+    test -d result || echo 'Not found the `result` link, so building...' && nix build .#qemu.vm
+
     pidof qemu-system-x86_64 \
-    || test -d result \
-    || nix build .#qemu.vm \
-    && pidof qemu-system-x86_64 \
     || (result/run-vm-kvm < /dev/null &) \
     && result/ssh-vm
   '';
