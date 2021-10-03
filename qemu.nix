@@ -266,6 +266,69 @@ rec {
 
       cp --verbose ${sshClient} $out/ssh-vm
       chmod +x $out/ssh-vm
+
+      #
+      cat <<WRAP > $out/prepares-volume
+      #!${pkgs.stdenv.shell}
+      # set -euo pipefail
+
+              rm -fr disk.qcow2 userdata.qcow2
+              test -f result/run-vm-kvm || nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.vm
+
+              pidof qemu-system-x86_64 || (result/run-vm-kvm < /dev/null &)
+
+              result/ssh-vm << COMMANDS
+              export VOLUME_MOUNT_PATH=/home/ubuntu/code
+
+              test -d "\$VOLUME_MOUNT_PATH" || sudo mkdir -p "\$VOLUME_MOUNT_PATH"
+
+              sudo stat "\$VOLUME_MOUNT_PATH"
+              sudo chown ubuntu: -v "\$VOLUME_MOUNT_PATH"
+              sudo stat "\$VOLUME_MOUNT_PATH"
+
+              sudo umount /code
+
+              sudo mount -t 9p \
+              -o trans=virtio,access=any,cache=none,version=9p2000.L,cache=none,msize=262144,rw \
+              hostshare "\$VOLUME_MOUNT_PATH"
+
+              sudo stat "\$VOLUME_MOUNT_PATH"
+
+              export OLD_UID=\$(getent passwd "\$(id -u)" | cut -f3 -d:)
+              export NEW_UID=\$(stat -c "%u" "\$VOLUME_MOUNT_PATH")
+
+              export OLD_GID=\$(getent group "\$(id -g)" | cut -f3 -d:)
+              export NEW_GID=\$(stat -c "%g" "\$VOLUME_MOUNT_PATH")
+
+              if [ "\$OLD_UID" != "\$NEW_UID" ]; then
+                  echo "Changing UID of \$(id -un) from \$OLD_UID to \$NEW_UID"
+                  #sudo usermod -u "\$NEW_UID" -o \$(id -un \$(id -u))
+                  sudo find / -xdev -uid "\$OLD_UID" -exec chown -hv "\$NEW_UID" {} \;
+              fi
+
+              if [ "\$OLD_GID" != "\$NEW_GID" ]; then
+                  echo "Changing GID of \$(id -un) from \$OLD_GID to \$NEW_GID"
+                  #sudo groupmod -g "\$NEW_GID" -o \$(id -gn \$(id -u))
+                  sudo find / -xdev -group "\$OLD_GID" -exec chgrp -hv "\$NEW_GID" {} \;
+              fi
+
+              # Do not use the ids here, it does not work!
+              sudo chown ubuntu:ubuntu -v "\$VOLUME_MOUNT_PATH"
+
+              sudo touch -d '1970-01-01 00:00:01' /home/ubuntu/.Xauthority "\$HOME"/.profile
+
+              sudo chown -v "\$NEW_UID":"\$NEW_GID" /home/ubuntu/. /home/ubuntu/.Xauthority "\$HOME"/.profile
+
+              sudo su -c "echo '#!/bin/bash' >> \$HOME/.profile"
+              sudo su -c "echo cd \$VOLUME_MOUNT_PATH >> \$HOME/.profile"
+
+              stat "\$HOME"/.profile
+
+              sudo su -c "sed -i -e \"s/^\(ubuntu:[^:]\):[0-9]*:[0-9]*:/\1:\''${NEW_UID}:\''${NEW_GID}:/\" /etc/passwd && sed -i \"/^ubuntu/s/:[0-9]*:/:\''${NEW_GID}:/g\" /etc/group && sed -i \"/^users/s/:[0-9]*:/:978:/g\" /etc/group && reboot"
+
+      COMMANDS
+      WRAP
+      chmod +x $out/prepares-volume
     '';
 
   sshClient = pkgs.writeShellScript "sshVM" ''
