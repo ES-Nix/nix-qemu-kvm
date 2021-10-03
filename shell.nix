@@ -211,10 +211,6 @@ let
         sudo chown -v "\$NEW_UID":"\$NEW_GID" /home/ubuntu/. /home/ubuntu/.Xauthority "\$HOME"/.profile
 
         sudo su -c "echo '#!/bin/bash' >> \$HOME/.profile"
-        sudo su -c "echo 'sudo umount /code' >> \$HOME/.profile"
-        sudo su -c "echo 'sudo mount -t 9p \' >> \$HOME/.profile"
-        sudo su -c "echo '-o trans=virtio,access=any,cache=none,version=9p2000.L,cache=none,msize=262144,rw \' >> \$HOME/.profile"
-        sudo su -c "echo hostshare \$VOLUME_MOUNT_PATH >> \$HOME/.profile"
         sudo su -c "echo cd \$VOLUME_MOUNT_PATH >> \$HOME/.profile"
 
         stat "\$HOME"/.profile
@@ -254,6 +250,7 @@ COMMANDS
       stat ~/.Xauthority
       stat ~/.profile
       cat ~/.profile
+      ls -al
 COMMANDS
   '';
 
