@@ -157,7 +157,19 @@ let
   '';
 
   backupCurrentState = writeShellScriptBin "backup-current-state" ''
-    result/backupCurrentState
+      backup_name=$1
+      if [ -z "$backup_name" ]; then
+        backup_name='default';
+      fi
+
+      echo 'Start backup...'
+      dd if=result/disk.qcow2 of="$backup_name".disk.qcow2.backup iflag=direct oflag=direct bs=4M conv=sparse
+      dd if=result/userdata.qcow2 of="$backup_name".userdata.qcow2.backup iflag=direct oflag=direct bs=4M conv=sparse
+      echo 'End backup...'
+  '';
+
+   run-vm-kvm = writeShellScriptBin "run-vm-kvm" ''
+    (result/run-vm-kvm < /dev/null &)
   '';
 
   prepares-volume = writeShellScriptBin "prepares-volume" ''
