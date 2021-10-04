@@ -283,6 +283,7 @@ mkShell {
     clean-all
     ssh-vm-volume-dev-test
     backupCurrentState
+    run-vm-kvm
 
   ];
 
