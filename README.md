@@ -2521,5 +2521,5 @@ rm -fv result *.qcow2*; \
 nix store gc --verbose \
 && nix build --refresh github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
 && nix develop --refresh github:ES-Nix/nix-qemu-kvm/dev \
---command bash -c 'prepares-volume && ssh-vm'
+--command bash -c 'vm-kill; run-vm-kvm && prepares-volume && ssh-vm'
 ```
