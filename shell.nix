@@ -157,15 +157,11 @@ let
   '';
 
   backupCurrentState = writeShellScriptBin "backup-current-state" ''
-      backup_name=$1
-      if [ -z "$backup_name" ]; then
-        backup_name='default';
-      fi
+    result/backupCurrentState
+  '';
 
-      echo 'Start backup...'
-      dd if=result/disk.qcow2 of="$backup_name".disk.qcow2.backup iflag=direct oflag=direct bs=4M conv=sparse
-      dd if=result/userdata.qcow2 of="$backup_name".userdata.qcow2.backup iflag=direct oflag=direct bs=4M conv=sparse
-      echo 'End backup...'
+  resetToBackup = writeShellScriptBin "reset-to-backup" ''
+    result/resetToBackup
   '';
 
    run-vm-kvm = writeShellScriptBin "run-vm-kvm" ''
@@ -174,7 +170,7 @@ let
 
   prepares-volume = writeShellScriptBin "prepares-volume" ''
 
-        result/ssh-vm << COMMANDS
+          result/ssh-vm << COMMANDS
         export VOLUME_MOUNT_PATH=/home/ubuntu/code
 
         test -d "\$VOLUME_MOUNT_PATH" || sudo mkdir -p "\$VOLUME_MOUNT_PATH"
@@ -279,6 +275,7 @@ mkShell {
     ssh-vm-volume-dev-test
     backupCurrentState
     run-vm-kvm
+    resetToBackup
 
   ];
 
