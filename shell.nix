@@ -170,7 +170,7 @@ let
 
   prepares-volume = writeShellScriptBin "prepares-volume" ''
 
-          result/ssh-vm << COMMANDS
+        result/ssh-vm << COMMANDS
         export VOLUME_MOUNT_PATH=/home/ubuntu/code
 
         test -d "\$VOLUME_MOUNT_PATH" || sudo mkdir -p "\$VOLUME_MOUNT_PATH"
@@ -253,6 +253,9 @@ COMMANDS
       stat ~/.profile
       cat ~/.profile
       ls -al
+
+      timeout 100 nix run nixpkgs#xorg.xclock
+      # timeout 100 nix run nixpkgs#qgis
 COMMANDS
   '';
 
@@ -266,16 +269,16 @@ mkShell {
     qemu
     wget
 
-    volumeMountHack
     VMKill
-    ssh-vm-dev
-    ssh-vm
-    prepares-volume
-    clean-all
-    ssh-vm-volume-dev-test
     backupCurrentState
-    run-vm-kvm
+    clean-all
+    prepares-volume
     resetToBackup
+    run-vm-kvm
+    ssh-vm
+    ssh-vm-dev
+    ssh-vm-volume-dev-test
+    volumeMountHack
 
   ];
 
