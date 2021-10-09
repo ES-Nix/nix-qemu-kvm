@@ -2525,3 +2525,35 @@ nix store gc --verbose \
 && nix develop --refresh github:ES-Nix/nix-qemu-kvm/dev \
 --command bash -c 'vm-kill; run-vm-kvm && prepares-volume && ssh-vm'
 ```
+
+#### In an OCI image running with podman
+
+
+```bash
+podman \
+run \
+--env=PATH=/root/.nix-profile/bin:/usr/bin:/bin \
+--device=/dev/kvm \
+--device=/dev/fuse \
+--env="DISPLAY=${DISPLAY:-:0.0}" \
+--interactive=true \
+--log-level=error \
+--network=host \
+--mount=type=tmpfs,destination=/var/lib/containers \
+--privileged=true \
+--tty=false \
+--rm=true \
+--user=0 \
+--volume=/sys/fs/cgroup:/sys/fs/cgroup:ro \
+docker.nix-community.org/nixpkgs/nix-flakes \
+<<COMMANDS
+mkdir --parent --mode=0755 ~/.config/nix
+echo 'experimental-features = nix-command flakes ca-references ca-derivations' >> ~/.config/nix/nix.conf
+
+echo 'Started'
+
+nix build --refresh github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
+&& nix develop --refresh github:ES-Nix/nix-qemu-kvm/dev \
+--command bash -c 'vm-kill; run-vm-kvm && prepares-volume && ssh-vm'
+COMMANDS
+```
