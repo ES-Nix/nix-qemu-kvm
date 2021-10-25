@@ -93,7 +93,7 @@ rec {
       -drive "file=$image,format=qcow2"
       -drive "file=$userdata,format=qcow2"
       -enable-kvm
-      -m 8G
+      -m 18G
       -nographic
       -serial mon:stdio
       -smp 4
