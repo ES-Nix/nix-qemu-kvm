@@ -2526,6 +2526,24 @@ nix store gc --verbose \
 --command bash -c 'vm-kill; run-vm-kvm && prepares-volume && ssh-vm'
 ```
 
+Useful to play with a snapshot:  
+```bash
+nix \
+develop \
+--refresh \
+github:ES-Nix/nix-qemu-kvm/dev
+```
+
+Do some stuff, and backup the state:
+```bash
+backup-current-state <backup-name>
+```
+
+Resetting to a backup state:
+```bash
+vm-kill; reset-to-backup <backup-name> && ssh-vm
+```
+
 #### In an OCI image running with podman
 
 
