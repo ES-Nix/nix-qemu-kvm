@@ -39,7 +39,7 @@ Most of this source is from [zimbatm](https://github.com/zimbatm/nix-experiments
 - TODO: understant if it pays off [use raw instead of qcow2](https://www.reddit.com/r/NixOS/comments/iorlow/nixos_setup_libvirtdqemukvmvirtmanager_why_is_the/g4gos4k/?utm_source=reddit&utm_medium=web2x&context=3)
 
 
-## Troubloshoting a bug in my setup with poetry2nix
+## Troubleshooting a bug in my setup with poetry2nix
 
 ```
 echo 'b' | sudo --stdin sed --in-place '/rootALL=(ALL:ALL) ALL/a ubuntuALL=(ALL:ALL) ALL' /etc/sudoers
@@ -74,7 +74,7 @@ test -d /nix || sudo mkdir --mode=0755 /nix \
 ```
 
 
-It is not totaly working:
+It is not totally working:
 ```bash
 sudo groupadd kvm
 sudo usermod --append --groups kvm "$USER"
@@ -109,7 +109,7 @@ Change: 2021-06-26 20:15:24.287113618 +0000
  Birth: -
 ```
 
-After `sudo reboot` it does not keep the permisions:
+After `sudo reboot` it does not keep the permissions:
 
 ```bash
 ubuntu@ubuntu:~$ stat /dev/kvm /dev/pts /dev/ptmx
@@ -210,7 +210,7 @@ grep -o 'vmx\|svm' /proc/cpuinfo
 
 ```bash
 sudo su -c "echo 'options kvm_intel nested=1' >> /etc/modprobe.d/kvm.conf" \
-sudo reboot
+&& sudo reboot
 ```
 
 Commands to test:
@@ -223,12 +223,12 @@ grep "^Mem" /proc/meminfo
 free -m
 ```
 
-In NixOS
-```
+In NixOS:
+```bash
 boot.kernelModules = [ "kvm-intel" ];
 boot.extraModprobeConfig = "options kvm_intel nested=1";
 ```
-https://github.com/NixOS/nixpkgs/issues/27930#issuecomment-417943781
+From: https://github.com/NixOS/nixpkgs/issues/27930#issuecomment-417943781
 
 About `libvirt`: https://nixos.wiki/wiki/Libvirt
 
@@ -686,7 +686,9 @@ sed \
 && reboot
 ```
 
-`! stat /etc/selinux/config || cat /etc/selinux/config | grep -e '^SELINUX='`
+```bash
+! stat /etc/selinux/config || cat /etc/selinux/config | grep -e '^SELINUX='
+```
 
 
 - https://linuxconfig.org/how-to-disable-enable-selinux-on-ubuntu-20-04-focal-fossa-linux
@@ -1534,7 +1536,7 @@ id | grep ubuntu
 echo 'End'
 COMMANDS
 ```
-Adapeted from: https://unix.stackexchange.com/a/187980
+Adapted from: https://unix.stackexchange.com/a/187980
 
 
 ```bash
@@ -2223,7 +2225,7 @@ nginxinc/nginx-unprivileged \
 && podman stop container-nginx-unprivileged \
 && podman rm container-nginx-unprivileged
 ```
-From: Missed it, TODO, finde the post. Related: [Publishing Ports](https://podman.io/getting-started/network#publishing-ports) 
+From: Missed it, TODO, find the post. Related: [Publishing Ports](https://podman.io/getting-started/network#publishing-ports) 
 
 
 #### 
@@ -2466,6 +2468,7 @@ github:ES-Nix/nix-qemu-kvm/dev
 ```bash
 nix \
 develop \
+--refresh \
 github:ES-Nix/nix-qemu-kvm/dev \
 --command \
 vm-kill; \
@@ -2493,7 +2496,8 @@ rm -f result \
 rm -fv result *.qcow2*; \
 nix store gc --verbose \
 && nix build --refresh github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
-&& nix develop --refresh github:ES-Nix/nix-qemu-kvm/dev#qemu.vm --command bash -c 'result/prepares-volume && result/ssh-vm'
+&& nix develop --refresh github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
+--command bash -c 'result/prepares-volume && result/ssh-vm'
 ```
 
 
@@ -2515,12 +2519,47 @@ bash \
 'vm-kill; prepares-volume && ssh-vm-dev'
 ```
 
+
+### Enable KVM, cgroup2 and more
+
+TODO: explain what is it all, which error would be faced if it is not done...
+```bash
+echo 'Start kvm stuff...' \
+&& getent group kvm || sudo groupadd kvm \
+&& sudo usermod --append --groups kvm "$USER" \
+&& echo 'End kvm stuff!' \
+&& echo 'Start cgroup v2 instalation...' \
+&& sudo mkdir -p /etc/systemd/system/user@.service.d \
+&& sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo \
+sed \
+--in-place \
+'s/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+/etc/default/grub \
+&& sudo grub-mkconfig -o /boot/grub/grub.cfg \
+&& echo 'End cgroup v2 instalation...' \
+&& echo 'Start ip_forward stuff...' \
+&& sudo \
+sed \
+-i \
+'/net.ipv4.ip_forward/s/^#*//g' \
+/etc/sysctl.conf \
+&& echo 'End ip_forward stuff...' \
+&& echo 'Start dbus stuff...' \
+&& sudo apt-get update \
+&& sudo apt-get install -y dbus-user-session \
+&& echo 'End dbus stuff...' \
+&& sudo reboot
+```
+
 ### 
 
 
 ```bash
 rm -fv result *.qcow2*; \
 nix store gc --verbose \
+&& nix store optimise --verbose \
 && nix build --refresh github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
 && nix develop --refresh github:ES-Nix/nix-qemu-kvm/dev \
 --command bash -c 'vm-kill; run-vm-kvm && prepares-volume && ssh-vm'
@@ -2543,6 +2582,27 @@ Resetting to a backup state:
 ```bash
 vm-kill; reset-to-backup <backup-name> && ssh-vm
 ```
+
+#### Troubleshooting
+
+
+```bash
+ps -fp $(pidof qemu-system-x86_64) | tr ' ' '\n'
+
+tr '\0' '\n' < /proc/$(pidof qemu-system-x86_64)/cmdline
+tr '\0' '\n' < /proc/$(pidof qemu-system-x86_64)/environ
+```
+From: https://stackoverflow.com/questions/821837/how-to-get-the-command-line-args-passed-to-a-running-process-on-unix-linux-syste
+
+```bash
+qemu-img info disk.qcow2
+qemu-img resize disk.qcow2 +16G
+qemu-img info disk.qcow2
+```
+Adapted from: 
+https://maunium.net/blog/resizing-qcow2-images/ 
+and https://serverfault.com/questions/329287/free-up-not-used-space-on-a-qcow2-image-file-on-kvm-qemu
+and https://serverfault.com/a/797350
 
 #### In an OCI image running with podman
 
