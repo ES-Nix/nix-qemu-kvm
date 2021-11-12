@@ -2583,6 +2583,13 @@ Resetting to a backup state:
 vm-kill; reset-to-backup <backup-name> && ssh-vm
 ```
 
+It kills the vm, restores a backup, resize the disk.qcow2 and ssh into the VM:
+```bash
+vm-kill; reset-to-backup \
+&& qemu-img resize disk.qcow2 +18G \
+&& ssh-vm
+```
+
 #### Troubleshooting
 
 
@@ -2603,6 +2610,8 @@ Adapted from:
 https://maunium.net/blog/resizing-qcow2-images/ 
 and https://serverfault.com/questions/329287/free-up-not-used-space-on-a-qcow2-image-file-on-kvm-qemu
 and https://serverfault.com/a/797350
+
+https://stackoverflow.com/questions/29124150/how-to-resize-the-qcow2-image-without-impact-the-application
 
 #### In an OCI image running with podman
 
@@ -2635,3 +2644,171 @@ nix build --refresh github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
 --command bash -c 'vm-kill; run-vm-kvm && prepares-volume && ssh-vm'
 COMMANDS
 ```
+
+### The kind
+
+
+
+```bash
+echo 'Start minikube stuff...' \
+&& curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
+&& chmod -v 0755 minikube \
+&& sudo mv -v minikube /usr/local/bin \
+&& echo 'End minikube stuff...' \
+&& echo 'Start kubectl stuff...' \
+&& echo 'https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-kubectl-binary-with-curl-on-linux' \
+&& curl -LO https://dl.k8s.io/release/v1.21.2/bin/linux/amd64/kubectl \
+&& curl -LO "https://dl.k8s.io/v1.21.2/bin/linux/amd64/kubectl.sha256" \
+&& echo "$(<kubectl.sha256) kubectl" | sha256sum --check \
+&& chmod -v +x kubectl \
+&& test -d "$HOME/.local/bin" || mkdir -p "$HOME"/.local/bin \
+&& grep -e 'export PATH=~/.local/bin:"$PATH"' -i ~/.bashrc || echo 'export PATH=~/.local/bin:"$PATH"' >> ~/.bashrc \
+&& mv ./kubectl ~/.local/bin/kubectl \
+&& echo 'End kubectl stuff...' \
+&& echo 'Start docker instalation...' \
+&& curl -fsSL https://get.docker.com | sudo sh \
+&& sudo usermod --append --groups docker "$USER" \
+&& docker --version \
+&& echo 'End docker instalation!' \
+&& sudo apt-get install -y golang-go \
+&& sudo reboot
+```
+
+
+```bash
+echo 'Start docker instalation...' \
+&& curl -fsSL https://get.docker.com | sudo sh \
+&& sudo usermod --append --groups docker "$USER" \
+&& docker --version \
+&& echo 'End docker instalation!'
+```
+
+
+
+```bash
+go version
+docker --version
+```
+
+
+```bash
+nix \
+profile \
+install \
+nixpkgs#kind \
+nixpkgs#kubectl \
+nixpkgs#cni \
+nixpkgs#cni-plugins \
+nixpkgs#conntrack-tools \
+nixpkgs#cri-o \
+github:ES-Nix/podman-rootless/from-nixpkgs \
+&& nix \
+develop \
+github:ES-Nix/podman-rootless/from-nixpkgs \
+--command \
+podman \
+--version \
+&& echo \
+&& echo 'Start kvm stuff...' \
+&& getent group kvm || sudo groupadd kvm \
+&& sudo usermod --append --groups kvm "$USER" \
+&& echo 'End kvm stuff!' \
+&& echo \
+&& echo 'Start cgroup v2 instalation...' \
+&& sudo mkdir -p /etc/systemd/system/user@.service.d \
+&& sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo \
+sed \
+--in-place \
+'s/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+/etc/default/grub \
+&& sudo grub-mkconfig -o /boot/grub/grub.cfg \
+&& echo 'End cgroup v2 instalation...' \
+&& echo 'Start ip_forward stuff...' \
+&& sudo \
+sed \
+-i \
+'/net.ipv4.ip_forward/s/^#*//g' \
+/etc/sysctl.conf \
+&& echo 'End ip_forward stuff...'  \
+&& echo 'Start dbus stuff...' \
+&& sudo apt-get update \
+&& sudo apt-get install -y dbus-user-session \
+&& echo 'End dbus stuff...' \
+&& echo \
+echo 'Start cni and crio stuff...' \
+&& sudo mkdir -pv /usr/lib/cni \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/bandwidth /usr/lib/cni/bandwidth \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/bridge /usr/lib/cni/bridge \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/dhcp /usr/lib/cni/dhcp \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/firewall /usr/lib/cni/firewall \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/host-device /usr/lib/cni/host-device \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/host-local /usr/lib/cni/host-local \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/ipvlan /usr/lib/cni/ipvlan \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/loopback /usr/lib/cni/loopback \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/macvlan /usr/lib/cni/macvlan \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/portmap /usr/lib/cni/portmap \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/ptp /usr/lib/cni/ptp \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/sbr /usr/lib/cni/sbr \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/static /usr/lib/cni/static \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/tuning /usr/lib/cni/tuning \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/vlan /usr/lib/cni/vlan \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/vrf /usr/lib/cni/vrf \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cri-o)"/bin/crio /usr/lib/crio \
+&& echo 'End cni and crio stuff...' \
+&& sudo reboot
+```
+
+
+```bash
+cd ~ \
+&& { cat << EOF >  ~/kind-example-config.yaml
+# From: https://raw.githubusercontent.com/kubernetes-sigs/kind/main/site/content/docs/user/kind-example-config.yaml
+# this config file contains all config fields with comments
+# NOTE: this is not a particularly useful config file
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+# patch the generated kubeadm config with some extra settings
+kubeadmConfigPatches:
+- |
+  apiVersion: kubelet.config.k8s.io/v1beta1
+  kind: KubeletConfiguration
+  evictionHard:
+    nodefs.available: "0%"
+# patch it further using a JSON 6902 patch
+kubeadmConfigPatchesJSON6902:
+- group: kubeadm.k8s.io
+  version: v1beta2
+  kind: ClusterConfiguration
+  patch: |
+    - op: add
+      path: /apiServer/certSANs/-
+      value: my-hostname
+# 1 control plane node and 3 workers
+nodes:
+# the control plane node config
+- role: control-plane
+# the three workers
+- role: worker
+- role: worker
+- role: worker
+EOF
+} && KIND_EXPERIMENTAL_PROVIDER=podman time kind create cluster 
+```
+
+
+cat << EOF | KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster --config=-
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- extraMounts:
+  - hostPath: /dev/mapper
+    containerPath: /dev/mapper
+EOF
+
+
+```bash
+tr '\0' '\n' < /proc/1351/cmdline
+ps -eF --sort=-rss
+```bash
