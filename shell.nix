@@ -168,6 +168,34 @@ let
     (result/run-vm-kvm < /dev/null &)
   '';
 
+   installNix = writeShellScriptBin "install-nix" ''
+
+    echo 'Started nix installer!'\
+    && { ssh-vm << COMMANDS
+    test -d /nix || sudo mkdir -m 0755 /nix \
+    && sudo -k chown "\$USER": /nix \
+    && SHA256=6a017688ec5f1a07c04b4fce96eb0f7d850cd7f3 \
+    && curl -fsSL https://raw.githubusercontent.com/ES-Nix/get-nix/"\$SHA256"/get-nix.sh | sh \
+    && . "\$HOME"/.nix-profile/etc/profile.d/nix.sh \
+    && . ~/."\$(ps -ocomm= -q \$\$)"rc \
+    && export TMPDIR=/tmp  \
+    && nix flake --version
+    COMMANDS
+    } && echo 'End of nix installer!'
+
+  '';
+
+   vmsshpoweroff = writeShellScriptBin "vm-ssh-poweroff" ''
+
+    echo echo \
+    && { ssh-vm << COMMANDS
+      uname -a
+      sudo poweroff
+    COMMANDS
+    } && echo
+
+  '';
+
   prepares-volume = writeShellScriptBin "prepares-volume" ''
 
         result/ssh-vm << COMMANDS
@@ -279,6 +307,8 @@ mkShell {
     ssh-vm-dev
     ssh-vm-volume-dev-test
     volumeMountHack
+    installNix
+    vmsshpoweroff
 
   ];
 
