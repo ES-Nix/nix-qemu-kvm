@@ -226,18 +226,18 @@ rec {
       #!${pkgs.stdenv.shell}
       # set -euo pipefail
 
-      backup_name=\$1
-      if [ -z "\$backup_name" ]; then
-        backup_name='default';
-      fi
+      # It was, lets say, really har to figure it sintax out!
+      # It basically scapes the dollar simbol with the left bar \ and uses
+      # the nix scape thing, two single quotes in sequence.
+      backup_name="\''${1:-default}"
 
       # cp --verbose disk.qcow2 "\$backup_name".disk.qcow2.backup
       # cp --verbose userdata.qcow2 "\$backup_name".userdata.qcow2.backup
 
-      echo 'Start backup...'
+      echo 'Start backup named: '"\$backup_name"
       dd if=disk.qcow2 of="\$backup_name".disk.qcow2.backup iflag=direct oflag=direct bs=4M conv=sparse
       dd if=userdata.qcow2 of="\$backup_name".userdata.qcow2.backup iflag=direct oflag=direct bs=4M conv=sparse
-      echo 'End backup...'
+      echo 'End backup...'"\$backup_name"
 
       WRAP
       chmod +x $out/backupCurrentState
