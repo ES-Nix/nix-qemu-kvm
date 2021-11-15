@@ -226,7 +226,7 @@ rec {
       #!${pkgs.stdenv.shell}
       # set -euo pipefail
 
-      # It was, lets say, really har to figure it sintax out!
+      # It was, lets say, really hard to figure it sintax out!
       # It basically scapes the dollar simbol with the left bar \ and uses
       # the nix scape thing, two single quotes in sequence.
       backup_name="\''${1:-default}"
