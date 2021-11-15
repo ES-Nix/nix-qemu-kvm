@@ -236,7 +236,7 @@ rec {
 
       echo 'Start backup named: '"\$backup_name"
       dd if=disk.qcow2 of="\''${backup_name}".disk.qcow2.backup iflag=direct oflag=direct bs=4M conv=sparse
-      dd if=userdata.qcow2 of="\''${$backup_name}".userdata.qcow2.backup iflag=direct oflag=direct bs=4M conv=sparse
+      dd if=userdata.qcow2 of="\''${backup_name}".userdata.qcow2.backup iflag=direct oflag=direct bs=4M conv=sparse
       echo 'End backup...'"\$backup_name"
 
       WRAP
