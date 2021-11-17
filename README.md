@@ -1932,6 +1932,8 @@ mv ~/k3s-rootless.service ~/.config/systemd/user/k3s-rootless.service
 ### kubectl
 
 
+mkdir -v ~/config-exercise
+
 kubectl config view
 kubectl config current-context
 
@@ -2678,11 +2680,153 @@ echo 'Start minikube stuff...' \
 ```bash
 echo 'Start docker instalation...' \
 && curl -fsSL https://get.docker.com | sudo sh \
+&& sudo groupadd docker; \
 && sudo usermod --append --groups docker "$USER" \
 && docker --version \
-&& echo 'End docker instalation!'
+&& echo 'End docker installation!'
 ```
 
+
+```bash
+sudo groupadd docker; \
+sudo usermod --append --groups docker "$USER" \
+&& sudo reboot
+```
+
+```bash
+nix \
+profile \
+install \
+nixpkgs#docker \
+nixpkgs#kind \
+nixpkgs#kubectl \
+&& sudo cp "$(nix eval --raw nixpkgs#docker)"/etc/systemd/system/{docker.service,docker.socket} /etc/systemd/system/ \
+&& sudo systemctl enable --now docker
+```
+
+
+
+```bash
+docker \
+run \
+--rm \
+docker.io/library/alpine:3.14.2 \
+sh \
+-c \
+'apk add --no-cache curl'
+```
+
+```bash
+docker \
+run \
+--interactive=true \
+--tty=true \
+--rm=true \
+--user='0' \
+--volume="$(pwd)":/code:rw \
+--workdir=/code \
+docker.io/library/alpine:3.14.2 \
+sh \
+-c \
+'touch abc123.txt'
+```
+
+
+```bash
+time kind create cluster --name testcluster
+```
+
+```bash
+kubeclt get nodes
+kubectl cluster-info
+kubectl cluster-info dump
+```
+
+
+
+```bash
+vm-kill; \
+   run-vm-kvm \
+&& prepares-volume \
+&& install-nix \
+&& ssh-vm
+```
+
+```bash
+vm-kill; \
+   backup-current-state \
+&& qemu-img resize disk.qcow2 +16G \
+&& ssh-vm
+```
+
+```bash
+vm-kill; \
+   run-vm-kvm \
+&& prepares-volume \
+&& vm-kill; \
+   install-nix \
+&& backup-current-state default \
+&& vm-kill; \
+   sleep 1 \
+&& qemu-img resize disk.qcow2 +16G \
+&& ssh-vm
+```
+
+
+```bash
+echo '.' \
+&& { cat << EOF > ~/script.sh
+#!/bin/sh
+
+# set -ex
+
+
+for commit in $(git rev-list --all)
+do
+
+    nix build github:arianvp/webauthn-oidc/"$commit" --no-link
+
+    retexit_code=$?
+    if [ $retexit_code -ne 0 ]; then
+        echo $commit >> log_error.out  
+    else
+        echo $commit >> log.out
+    fi
+
+    nix store gc --verbose \
+    && nix store optimise --verbose
+done
+EOF 
+} && chmod +x ~/script.sh \
+&& ./script.sh
+```
+
+```bash
+cat log_error.out | wc -l
+cat log.out | wc -l
+```
+
+
+
+##### Did not work
+
+```bash
+nix build nixpkgs#docker
+ls -al result/etc/systemd/system/
+```
+
+```bash
+sudo mkdir -p /etc/systemd/system/docker.service.d
+sudo cp result/etc/systemd/system/{docker.service,docker.socket} /etc/systemd/system/docker.service.d/
+```
+
+
+```bash
+nix profile install nixpkgs#kind nixpkgs#kubectl
+time kind create cluster
+```
+
+###
 
 
 ```bash
@@ -2797,7 +2941,19 @@ EOF
 } && KIND_EXPERIMENTAL_PROVIDER=podman time kind create cluster 
 ```
 
+```bash
+time kind create cluster --kubeconfig ~/kind-example-config.yaml
+```
 
+```bash
+cat << EOF > config.yaml
+
+```
+
+KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster -v9
+
+
+```bash
 cat << EOF | KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -2806,9 +2962,419 @@ nodes:
   - hostPath: /dev/mapper
     containerPath: /dev/mapper
 EOF
-
+```
 
 ```bash
 tr '\0' '\n' < /proc/1351/cmdline
 ps -eF --sort=-rss
+sudo strace -v -s 4096 -f -c -p $(pidof kind)
+tr '\0' '\n' < /proc/$(echo $(pidof podman) | cut -d' ' -f1)/cmdline
+```
+
+
+
 ```bash
+podman \
+run \
+--hostname ffoo-control-plane \
+--name ffoo-control-plane \
+--label io.x-k8s.kind.role=control-plane \
+--privileged \
+--tmpfs /tmp \
+--tmpfs /run \
+--volume 7e7df0f822ef35f9d5f9e10f27e5a110d19f458e3cb20ad9ecd4fb9b5708686e:/var:suid,exec,dev \
+--volume /lib/modules:/lib/modules:ro \
+--volume=/sys/fs/cgroup:/sys/fs/cgroup:ro \
+--detach \
+--tty \
+--net kind \
+--label io.x-k8s.kind.cluster=ffoo \
+-e container=podman \
+--publish=127.0.0.1:34163:6443/tcp \
+-e KUBECONFIG=/etc/kubernetes/admin.conf \
+kindest/node@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6
+```
+
+systemctl status sys-kernel-tracing.mount
+
+
+podman run -it --privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:rw --rm 32b8b755dee8 bash
+docker run -it --privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:rw --rm kindest/node@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6
+docker pull kindest/node@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6
+
+
+
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock nexdrew/rekcod
+
+```bash
+docker \
+run \
+--name kind-control-plane \
+--privileged \
+--runtime runc \
+-v /lib/modules:/lib/modules:ro \
+-p 127.0.0.1:40169:6443/tcp \
+--net kind \
+--security-opt 'seccomp=unconfined' \
+--security-opt 'apparmor=unconfined' \
+--security-opt 'label=disable' \
+-h kind-control-plane \
+--expose 6443/tcp \
+-l io.x-k8s.kind.cluster='kind' \
+-l io.x-k8s.kind.role='control-plane' \
+-e 'KUBECONFIG=/etc/kubernetes/admin.conf' \
+-e 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
+-e 'container=docker' \
+-d \
+-t \
+--entrypoint="/usr/local/bin/entrypoint /sbin/init" \
+--rm \
+kindest/node:v1.21.1@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6
+```
+
+```bash
+docker \
+inspect \
+--format "$(curl -s https://gist.githubusercontent.com/efrecon/8ce9c75d518b6eb863f667442d7bc679/raw/run.tpl)" \
+ab86810beec3
+```
+
+Refs.:
+- https://gist.github.com/efrecon/8ce9c75d518b6eb863f667442d7bc679#gistcomment-3582870
+
+
+```bash
+docker \
+  run \
+  --name "/kind-control-plane" \
+  --privileged \
+  --runtime "runc" \
+  --volume "/lib/modules:/lib/modules:ro" \
+  --log-driver "json-file" \
+  --restart "on-failure:1" \
+  --publish "127.0.0.1:46123:6443/tcp" \
+  --network "kind" \
+  --network-alias "ab86810beec3" \
+  --network-alias "kind-control-plane" \
+  --hostname "kind-control-plane" \
+  --expose "6443/tcp" \
+  --env "KUBECONFIG=/etc/kubernetes/admin.conf" \
+  --env "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+  --env "container=docker" \
+  --label "io.x-k8s.kind.cluster"="kind" \
+  --label "io.x-k8s.kind.role"="control-plane" \
+  --detach \
+  --tty \
+  "kindest/node:v1.21.1@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6"
+```
+
+
+```bash
+podman \
+  run \
+  --name "kind-control-plane" \
+  --privileged \
+  --runtime "runc" \
+  --volume "/lib/modules:/lib/modules:ro" \
+  --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro \
+  --log-driver "json-file" \
+  --restart "on-failure:1" \
+  --publish "127.0.0.1:46123:6443/tcp" \
+  --network "kind" \
+  --network-alias "ab86810beec3" \
+  --network-alias "kind-control-plane" \
+  --hostname "kind-control-plane" \
+  --expose "6443/tcp" \
+  --env "KUBECONFIG=/etc/kubernetes/admin.conf" \
+  --env "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+  --env "container=podman" \
+  --label "io.x-k8s.kind.cluster"="kind" \
+  --label "io.x-k8s.kind.role"="control-plane" \
+  --detach \
+  --tty \
+  kindest/node:v1.21.1
+```
+
+
+podman network create kind
+
+
+
+
+podman \
+  run \
+  --volume "/lib/modules:/lib/modules:ro" \
+  --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro \
+  -i \
+  --tty \
+  --rm \
+  --privileged \
+  kindest/node:v1.21.1
+
+
+
+
+```bash
+nix \
+profile \
+install \
+nixpkgs#cni \
+nixpkgs#cni-plugins \
+github:ES-Nix/podman-rootless/from-nixpkgs \
+&& nix \
+develop \
+github:ES-Nix/podman-rootless/from-nixpkgs \
+--command \
+podman \
+--version \
+&& echo \
+&& echo 'Start cni stuff...' \
+&& sudo mkdir -pv /usr/lib/cni \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/bandwidth /usr/lib/cni/bandwidth \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/bridge /usr/lib/cni/bridge \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/dhcp /usr/lib/cni/dhcp \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/firewall /usr/lib/cni/firewall \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/host-device /usr/lib/cni/host-device \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/host-local /usr/lib/cni/host-local \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/ipvlan /usr/lib/cni/ipvlan \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/loopback /usr/lib/cni/loopback \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/macvlan /usr/lib/cni/macvlan \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/portmap /usr/lib/cni/portmap \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/ptp /usr/lib/cni/ptp \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/sbr /usr/lib/cni/sbr \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/static /usr/lib/cni/static \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/tuning /usr/lib/cni/tuning \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/vlan /usr/lib/cni/vlan \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/vrf /usr/lib/cni/vrf \
+&& echo 'End cni stuff...' 
+
+
+echo 'Start bypass sudo podman stuff...' \
+&& echo 'Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:'"$(nix eval --raw github:ES-Nix/podman-rootless/from-nixpkgs)/bin" | sudo tee -a /etc/sudoers.d/"$USER" \
+&& echo 'End bypass sudo podman stuff...'
+
+sudo podman --version
+sudo podman network create podman
+
+sudo \
+podman \
+run \
+--entrypoint=/bin/bash \
+--interactive=true \
+--privileged=true \
+--rm=true \
+--tty=true \
+--volume=/dev/mapper:/dev/mapper \
+--volume=/lib/modules:/lib/modules:ro \
+quay.io/podman/stable:v3.4.1
+```
+
+Refs:
+- https://unix.stackexchange.com/questions/83191/how-to-make-sudo-preserve-path/151188#151188
+- https://stackoverflow.com/a/8447577
+
+```bash
+podman pull docker.io/kindest/node:v1.21.1
+podman images
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64
+chmod +x ./kind
+export KIND_EXPERIMENTAL_PROVIDER=podman
+sed -i '/^utsns/d' /etc/containers/containers.conf
+./kind create cluster --retain --image=docker.io/kindest/node:v1.21.1
+```
+
+```bash
+export USER=podman
+echo "$USER"' ALL=(ALL) NOPASSWD:SETENV: ALL' | sudo tee -a /etc/sudoers.d/"$USER"
+
+sudo chmod 0700 /home/"$USER"
+sudo chown "$USER": -R /home/"$USER"
+
+echo "$USER"':100000:65536' | sudo tee -a /etc/subuid \
+&& echo "$USER"':100000:65536' | sudo tee -a /etc/subgid \
+&& su podman
+```
+
+```bash
+sudo \
+podman \
+run \
+--entrypoint=/bin/bash \
+--interactive=true \
+--privileged=true \
+--rm=true \
+--tty=true \
+--volume=/dev/mapper:/dev/mapper:rw \
+--volume=/lib/modules:/lib/modules:ro \
+quay.io/podman/stable:v3.4.1
+```
+
+
+```bash
+sudo \
+podman \
+run \
+--entrypoint=/bin/bash \
+--interactive=true \
+--privileged=false \
+--rm=true \
+--tty=true \
+--volume="$(pwd)":/code:rw \
+--volume=/dev/mapper:/dev/mapper:rw \
+--volume=/dev/fuse:/dev/fuse:rw \
+--volume=/lib/modules:/lib/modules:ro \
+quay.io/podman/stable:v3.4.1
+```
+
+--device=/dev/fuse \
+
+```bash
+cd
+podman pull docker.io/kindest/node:v1.21.1
+podman images
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64
+chmod +x ./kind
+export KIND_EXPERIMENTAL_PROVIDER=podman
+sed -i '/^utsns/d' /etc/containers/containers.conf
+./kind create cluster --retain --image=docker.io/kindest/node:v1.21.1
+```
+podman save > /code/image.tar.gz docker.io/kindest/node:v1.21.1
+podman load < /code/image.tar.gz
+
+
+podman \
+run \
+--log-level=debug \
+--hostname kind-control-plane \
+--name kind-control-plane \
+--label io.x-k8s.kind.role=control-plane \
+--privileged \
+--tmpfs /tmp \
+--tmpfs /run \
+--volume c28e813d751843faa157d7e24017b9e78cbb4e9b02c1391c545319cd0963e394:/var:suid,exec,dev \
+--volume /lib/modules:/lib/modules:ro \
+--detach \
+--tty \
+--net kind \
+--label io.x-k8s.kind.cluster=kind \
+-e container=podman \
+--publish=127.0.0.1:36745:6443/tcp \
+-e KUBECONFIG=/etc/kubernetes/admin.conf \
+--rm \
+docker.io/kindest/node:v1.21.1
+
+sudo dnf install -y go
+
+sudo chown -R $(id -u):$(id -g) /dev
+
+
+podman \
+run \
+--annotation run.oci.keep_original_groups=1 \
+--entrypoint=/bin/bash \
+--interactive=true \
+--privileged=false \
+--rm=true \
+--tty=true \
+--userns=keep-id \
+--volume="$(pwd)":/code:rw \
+--volume=/dev/mapper:/dev/mapper:rw \
+--volume=/lib/modules:/lib/modules:ro \
+quay.io/podman/stable:v3.4.1
+
+
+podman \
+run \
+--entrypoint=/bin/bash \
+--interactive=true \
+--privileged=false \
+--rm=true \
+--tty=true \
+--volume="$(pwd)":/code:rw \
+--volume=/dev/mapper:/dev/mapper:rw \
+--volume=/lib/modules:/lib/modules:ro \
+--volume=/sys/fs/cgroup:/sys/fs/cgroup:rw \
+quay.io/podman/stable:v3.4.1
+
+
+### KinP with rootfull podman, all from nixpkgs
+
+
+```bash
+nix \
+profile \
+install \
+nixpkgs#cni \
+nixpkgs#cni-plugins \
+nixpkgs#kind \
+nixpkgs#kubectl \
+github:ES-Nix/podman-rootless/from-nixpkgs \
+&& nix \
+develop \
+github:ES-Nix/podman-rootless/from-nixpkgs \
+--command \
+podman \
+--version \
+&& echo \
+&& echo 'Start cni stuff...' \
+&& sudo mkdir -pv /usr/lib/cni \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/bandwidth /usr/lib/cni/bandwidth \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/bridge /usr/lib/cni/bridge \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/dhcp /usr/lib/cni/dhcp \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/firewall /usr/lib/cni/firewall \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/host-device /usr/lib/cni/host-device \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/host-local /usr/lib/cni/host-local \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/ipvlan /usr/lib/cni/ipvlan \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/loopback /usr/lib/cni/loopback \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/macvlan /usr/lib/cni/macvlan \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/portmap /usr/lib/cni/portmap \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/ptp /usr/lib/cni/ptp \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/sbr /usr/lib/cni/sbr \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/static /usr/lib/cni/static \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/tuning /usr/lib/cni/tuning \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/vlan /usr/lib/cni/vlan \
+&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/vrf /usr/lib/cni/vrf \
+&& echo 'End cni stuff...' 
+
+
+echo 'Start bypass sudo podman stuff...' \
+&& PODMAN_NIX_PATH="$(nix eval --raw github:ES-Nix/podman-rootless/from-nixpkgs)/bin" \
+&& KIND_NIX_PATH="$(nix eval --raw nixpkgs#kind)/bin" \
+&& KUBECTL_NIX_PATH="$(nix eval --raw nixpkgs#kubectl)/bin" \
+&& echo 'Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:'"$PODMAN_NIX_PATH":"$KIND_NIX_PATH":"$KUBECTL_NIX_PATH" | sudo tee -a /etc/sudoers.d/"$USER" \
+&& echo 'End bypass sudo podman stuff...'
+
+sudo podman --version
+sudo kubectl version
+sudo kind --version
+sudo podman network exists podman || sudo podman network create podman
+```
+
+
+```bash
+sudo podman pull docker.io/kindest/node:v1.21.1
+sudo podman images
+sudo kind create cluster --retain --image=docker.io/kindest/node:v1.21.1
+```
+
+
+```bash
+sudo kubectl cluster-info --context kind-kind
+sudo kubectl get pods -A
+```
+
+
+```bash
+sudo env PATH="$PATH" kind delete cluster
+```
+
+
+```bash
+sudo kubectl apply -- -f https://k8s.io/examples/application/shell-demo.yaml
+
+sudo kubectl get pod shell-demo
+
+sudo kubectl exec --stdin --tty shell-demo -- /bin/bash -c 'ls -al /'
+
+sudo kubectl delete pod shell-demo
+```
