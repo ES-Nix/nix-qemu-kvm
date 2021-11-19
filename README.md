@@ -532,17 +532,93 @@ EOF
 ```
 
 
-wget https://github.com/rootless-containers/usernetes/releases/download/v20210708.0/usernetes-x86_64.tbz \
-&& tar xjvf usernetes-x86_64.tbz \
-&& cd usernetes \
-&& ./install.sh --cri=containerd
-
+```bash
 nix \
 profile \
 install \
 nixpkgs#wget \
-github:ES-Nix/podman-rootless/from-nixpkgs
+nixpkgs#bzip2 \
+nixpkgs#kubectl \
+nixpkgs#fuse3 \
+nixpkgs#iptables \
+nixpkgs#conntrack-tools \
+github:ES-Nix/podman-rootless/from-nixpkgs \
+&& nix \
+develop \
+github:ES-Nix/podman-rootless/from-nixpkgs \
+--command \
+podman \
+--version
+```
 
+```bash
+wget https://github.com/rootless-containers/usernetes/releases/download/v20210708.0/usernetes-x86_64.tbz \
+&& tar xjvf usernetes-x86_64.tbz \
+&& cd usernetes \
+&& ./install.sh --cri=containerd
+```
+
+
+grep "^$(whoami):" /etc/sub?id
+
+MODULE=fuse
+sudo modinfo "$MODULE" 1> /dev/null 2> /dev/null \
+&& ! sudo modprobe -n --first-time "$MODULE" 2> /dev/null \
+&& echo "Loaded" || modprobe "$MODULE"
+
+Refs.:
+- https://stackoverflow.com/a/30311688
+
+
+```bash
+cat <<EOF | xargs sudo modprobe
+br_netfilter
+bridge
+fuse
+ip6_tables
+ip6table_filter
+ip6table_nat
+ip_tables
+iptable_filter
+iptable_nat
+nf_tables
+tap
+tun
+veth
+x_tables
+xt_MASQUERADE
+xt_addrtype
+xt_comment
+xt_conntrack
+xt_mark
+xt_multiport
+xt_nat
+xt_tcpudp
+EOF
+```
+
+
+podman ps
+
+
+
+docker cp usernetes-node:/home/user/.config/usernetes/master/admin-localhost.kubeconfig docker.kubeconfig
+export KUBECONFIG=./docker.kubeconfig
+kubectl run -it --rm --image busybox foo
+
+kubectl get nodes -o wide
+
+
+docker \
+run \
+-td \
+--name usernetes-node \
+-p 127.0.0.1:6443:6443 \
+--privileged \
+ghcr.io/rootless-containers/usernetes \
+--cri=containerd
+
+&& getent group docker || sudo groupadd docker \
 
 podman \
 stats \
@@ -553,6 +629,7 @@ sudo apt-get install -y systemd
 sudo apt-get update &&
 && sudo apt-get install -y dbus-user-session
 
+printenv DBUS_SESSION_BUS_ADDRESS
 env | rg DBUS_SESSION_BUS_ADDRESS
 systemctl --user status dbus.socket
 
@@ -2680,7 +2757,7 @@ echo 'Start minikube stuff...' \
 ```bash
 echo 'Start docker instalation...' \
 && curl -fsSL https://get.docker.com | sudo sh \
-&& sudo groupadd docker; \
+&& getent group docker || sudo groupadd docker \
 && sudo usermod --append --groups docker "$USER" \
 && docker --version \
 && echo 'End docker installation!'
@@ -2703,7 +2780,9 @@ nixpkgs#kubectl \
 && sudo cp "$(nix eval --raw nixpkgs#docker)"/etc/systemd/system/{docker.service,docker.socket} /etc/systemd/system/ \
 && sudo systemctl enable --now docker
 ```
-
+Refs.: 
+- https://github.com/NixOS/nixpkgs/issues/70407
+- https://github.com/moby/moby/tree/e9ab1d425638af916b84d6e0f7f87ef6fa6e6ca9/contrib/init/systemd
 
 
 ```bash
@@ -2969,8 +3048,13 @@ tr '\0' '\n' < /proc/1351/cmdline
 ps -eF --sort=-rss
 sudo strace -v -s 4096 -f -c -p $(pidof kind)
 tr '\0' '\n' < /proc/$(echo $(pidof podman) | cut -d' ' -f1)/cmdline
+strace -v -s 4096 -f -o trace.txt id
+sudo strace -v -s 4096 -f -o trace.txt sudo id
 ```
 
+Refs.:
+- https://stackoverflow.com/a/57696584
+- https://unix.stackexchange.com/a/83808
 
 
 ```bash
@@ -3209,6 +3293,32 @@ run \
 quay.io/podman/stable:v3.4.1
 ```
 
+```bash
+sudo \
+podman \
+run \
+--entrypoint=/bin/bash \
+--interactive=true \
+--privileged=true \
+--rm=true \
+--tty=false \
+--volume=/dev/mapper:/dev/mapper:rw \
+--volume=/lib/modules:/lib/modules:ro \
+quay.io/podman/stable:v3.4.1 \
+<<COMMANDS
+podman pull docker.io/kindest/node:v1.21.1
+podman images
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64
+chmod +x ./kind
+export KIND_EXPERIMENTAL_PROVIDER=podman
+sed -i '/^utsns/d' /etc/containers/containers.conf
+./kind create cluster --retain --image=docker.io/kindest/node:v1.21.1
+COMMANDS
+```
+
+
+podman info | grep cgroupVersion
+
 
 ```bash
 sudo \
@@ -3317,25 +3427,24 @@ podman \
 --version \
 && echo \
 && echo 'Start cni stuff...' \
-&& sudo mkdir -pv /usr/lib/cni \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/bandwidth /usr/lib/cni/bandwidth \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/bridge /usr/lib/cni/bridge \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/dhcp /usr/lib/cni/dhcp \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/firewall /usr/lib/cni/firewall \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/host-device /usr/lib/cni/host-device \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/host-local /usr/lib/cni/host-local \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/ipvlan /usr/lib/cni/ipvlan \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/loopback /usr/lib/cni/loopback \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/macvlan /usr/lib/cni/macvlan \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/portmap /usr/lib/cni/portmap \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/ptp /usr/lib/cni/ptp \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/sbr /usr/lib/cni/sbr \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/static /usr/lib/cni/static \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/tuning /usr/lib/cni/tuning \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/vlan /usr/lib/cni/vlan \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/vrf /usr/lib/cni/vrf \
-&& echo 'End cni stuff...' 
+&& test -d /etc/containers || sudo mkdir /etc/containers \
+&& { sudo tee /etc/containers/containers.conf > /dev/null <<'EOF'
+[engine]
+events_logger = "file"
+cgroup_manager = "cgroupfs"
 
+[network]
+cni_plugin_dirs = [
+  "/usr/local/libexec/cni",
+  "/usr/libexec/cni",
+  "/usr/local/lib/cni",
+  "/usr/lib/cni",
+  "/opt/cni/bin",
+]
+EOF
+} && NIX_CNI_PLUGINS_PATH="$(nix eval --raw nixpkgs#cni-plugins)"/bin \
+&& sudo sed -i '\="/opt/cni/bin",=a    "'${NIX_CNI_PLUGINS_PATH}'",' /etc/containers/containers.conf \
+&& echo 'End cni stuff...'
 
 echo 'Start bypass sudo podman stuff...' \
 && PODMAN_NIX_PATH="$(nix eval --raw github:ES-Nix/podman-rootless/from-nixpkgs)/bin" \
@@ -3348,12 +3457,15 @@ sudo podman --version
 sudo kubectl version
 sudo kind --version
 sudo podman network exists podman || sudo podman network create podman
+
+sudo podman pull docker.io/kindest/node:v1.21.1
+sudo podman images
 ```
+Refs.:
+- https://stackoverflow.com/questions/1797906/delete-using-a-different-delimiter-with-sed#comment116336487_1797967
 
 
 ```bash
-sudo podman pull docker.io/kindest/node:v1.21.1
-sudo podman images
 sudo kind create cluster --retain --image=docker.io/kindest/node:v1.21.1
 ```
 
@@ -3365,12 +3477,7 @@ sudo kubectl get pods -A
 
 
 ```bash
-sudo env PATH="$PATH" kind delete cluster
-```
-
-
-```bash
-sudo kubectl apply -- -f https://k8s.io/examples/application/shell-demo.yaml
+sudo kubectl apply -f https://k8s.io/examples/application/shell-demo.yaml
 
 sudo kubectl get pod shell-demo
 
@@ -3378,3 +3485,173 @@ sudo kubectl exec --stdin --tty shell-demo -- /bin/bash -c 'ls -al /'
 
 sudo kubectl delete pod shell-demo
 ```
+
+
+```bash
+sudo \
+apt-get \
+remove \
+--purge \
+--auto-remove \
+--allow-remove-essential \
+-y \
+systemd
+
+systemd
+jornalctl
+```
+
+
+
+###
+
+
+
+
+sudo \
+podman \
+run \
+--env="DISPLAY=${DISPLAY:-:0.0}" \
+--interactive=true \
+--log-level=error \
+--privileged=true \
+--tty=true \
+--rm=true \
+--user=0 \
+--network=host \
+--mount=type=tmpfs,destination=/var/lib/containers \
+--volume=/lib/modules:/lib/modules:ro \
+--volume=/dev/mapper:/dev/mapper:rw \
+--volume=/sys/fs/cgroup:/sys/fs/cgroup:rw \
+docker.io/library/fedora:36
+
+dnf install -y podman
+
+podman \
+run \
+--rm \
+docker.io/library/alpine:3.14.2 \
+sh \
+-c \
+'apk add --no-cache curl'
+
+
+```bash
+podman \
+run \
+--interactive=true \
+--memory-reservation=200m \
+--memory=300m \
+--memory-swap=300m \
+--rm=true \
+--tty=true \
+docker.io/library/alpine:3.14.2 \
+echo \
+'Hi!'
+```
+
+podman \
+stats \
+--cgroup-manager=systemd
+
+
+podman \
+stats \
+--cgroup-manager=cgroupfs
+
+```bash
+podman \
+run \
+--events-backend="file" \
+--storage-driver="vfs" \
+--cgroups=disabled \
+--log-level=error \
+--interactive=true \
+--network=host \
+--tty=true \
+docker.io/library/alpine:3.14.2 \
+sh \
+-c 'apk add --no-cache curl && echo PinP'
+```
+
+
+
+```bash
+podman pull docker.io/kindest/node:v1.21.1
+podman images
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64
+chmod +x ./kind
+export KIND_EXPERIMENTAL_PROVIDER=podman
+./kind create cluster --retain --image=docker.io/kindest/node:v1.21.1
+```
+
+sed -i '/^utsns/d' /etc/containers/containers.conf
+
+```bash
+echo 'Start cgroup v1 instalation...' \
+&& sudo rm -fr /etc/systemd/system/user@.service.d \
+&& sudo \
+sed \
+-i \
+'s/^GRUB_CMDLINE_LINUX=".*"/GRUB_CMDLINE_LINUX=""/' \
+/etc/default/grub \
+&& sudo grub-mkconfig -o /boot/grub/grub.cfg \
+&& echo 'End cgroup v1 instalation...' \
+&& sudo reboot
+```
+
+cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=0
+
+```bash
+echo 'Start cgroup v2 instalation...' \
+&& sudo mkdir -p /etc/systemd/system/user@.service.d \
+&& sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo \
+sed \
+--in-place \
+'s/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+/etc/default/grub \
+&& sudo grub-mkconfig -o /boot/grub/grub.cfg \
+&& echo 'End cgroup v2 instalation...' \
+&& sudo reboot
+```
+
+```bash
+sudo kind delete cluster
+```
+
+
+```bash
+sudo kind create cluster --retain --image=docker.io/kindest/node:v1.21.1
+```
+
+
+```bash
+sudo apt-get update
+sudo apt-get install -y openssh-server wget
+
+sudo sed -i 's/#   Port .*/    Port 29980/' /etc/ssh/ssh_config
+
+sudo systemctl restart ssh
+
+
+wget https://github.com/PedroRegisPOAR.keys
+
+test -d ~/.ssh || mkdir -pv ~/.ssh
+
+cat PedroRegisPOAR.keys >> ~/.ssh/authorized_keys
+
+rm -f PedroRegisPOAR.keys
+```
+
+```bash
+ssh ubuntu@127.0.0.1 -p 10022
+```
+
+
+```bash
+ssh root@127.0.0.1 -p 10022
+```
+
+
