@@ -3655,3 +3655,303 @@ ssh root@127.0.0.1 -p 10022
 ```
 
 
+### microk8s from snap
+
+
+```bash
+sudo snap install microk8s --classic
+microk8s --version
+```
+
+
+### Podman rootless and systemd
+
+
+[How to run systemd in a container](https://developers.redhat.com/blog/2019/04/24/how-to-run-systemd-in-a-container#)
+
+`STOPSIGNAL SIGRTMIN+3` from https://github.com/kubernetes-sigs/kind/blob/ecd604e78108007b672e42a5dc6244a150e03950/images/base/Dockerfile#L214
+
+In:
+```bash
+nix build --refresh github:ES-Nix/nix-qemu-kvm/dev \
+&& nix develop --refresh github:ES-Nix/nix-qemu-kvm/dev
+
+backup-current-state default
+vm-kill; reset-to-backup && qemu-img resize disk.qcow2 +16G && ssh-vm
+```
+
+TODO: it should be a facade, hide all these complexities in a simpler command, 
+podman flake should know how to install itself.
+```bash
+nix \
+profile \
+install \
+nixpkgs#cni \
+nixpkgs#cni-plugins \
+github:ES-Nix/podman-rootless/from-nixpkgs \
+&& nix \
+develop \
+github:ES-Nix/podman-rootless/from-nixpkgs \
+--command \
+podman \
+--version \
+&& echo \
+&& echo 'Start cni stuff...' \
+&& test -d /etc/containers || sudo mkdir /etc/containers \
+&& { sudo tee /etc/containers/containers.conf > /dev/null <<'EOF'
+[engine]
+events_logger = "file"
+cgroup_manager = "systemd"
+
+[network]
+cni_plugin_dirs = [
+  "/usr/local/libexec/cni",
+  "/usr/libexec/cni",
+  "/usr/local/lib/cni",
+  "/usr/lib/cni",
+  "/opt/cni/bin",
+]
+EOF
+} && NIX_CNI_PLUGINS_PATH="$(nix eval --raw nixpkgs#cni-plugins)"/bin \
+&& sudo sed -i '\="/opt/cni/bin",=a    "'${NIX_CNI_PLUGINS_PATH}'",' /etc/containers/containers.conf \
+&& echo 'End cni stuff...'
+
+echo 'Start bypass sudo podman stuff...' \
+&& PODMAN_NIX_PATH="$(nix eval --raw github:ES-Nix/podman-rootless/from-nixpkgs)/bin" \
+&& echo 'Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:'"$PODMAN_NIX_PATH" | sudo tee -a /etc/sudoers.d/"$USER" \
+&& echo 'End bypass sudo podman stuff...'
+
+sudo podman --version
+sudo podman network exists podman || sudo podman network create podman
+
+sudo podman images
+```
+Refs.:
+- https://stackoverflow.com/questions/1797906/delete-using-a-different-delimiter-with-sed#comment116336487_1797967
+
+
+```bash
+echo 'Start cgroup v2 instalation...' \
+&& sudo mkdir -p /etc/systemd/system/user@.service.d \
+&& sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo \
+sed \
+--in-place \
+'s/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+/etc/default/grub \
+&& sudo grub-mkconfig -o /boot/grub/grub.cfg \
+&& echo 'End cgroup v2 instalation...' \
+&& echo 'Start ip_forward stuff...' \
+&& sudo \
+sed \
+-i \
+'/net.ipv4.ip_forward/s/^#*//g' \
+/etc/sysctl.conf \
+&& echo 'End ip_forward stuff...' \
+&& echo 'Start dbus stuff...' \
+&& sudo apt-get update \
+&& sudo apt-get install -y dbus-user-session \
+&& echo 'End dbus stuff...' \
+&& sudo reboot
+```
+
+
+```bash
+cat > Containerfile << EOF
+FROM docker.io/library/fedora:34
+
+RUN dnf -y install httpd; dnf clean all; systemctl enable httpd
+
+EXPOSE 80
+
+CMD [ "/sbin/init" ]
+EOF
+
+sudo \
+podman \
+build \
+--file Containerfile \
+--tag systemd \
+.
+
+sudo podman images
+
+sudo \
+podman \
+run \
+--interactive=true \
+--name=play-systemd \
+--publish=80:80 \
+--tty=true \
+--tty=true \
+localhost/systemd
+```
+
+```bash
+sudo \
+podman \
+exec \
+--interactive=true \
+--tty=true \
+play-systemd \
+bash \
+-c \
+"uname -a \
+&& echo \
+&& dnf --version"
+```
+
+
+```bash
+curl localhost
+```
+
+
+#### Rootless?
+
+```bash
+sudo sysctl net.ipv4.ip_unprivileged_port_start=80
+```
+
+```bash
+echo 'net.ipv4.ip_unprivileged_port_start=80' | sudo tee -a /etc/sysctl.conf
+```
+Refs.: https://github.com/containers/podman/issues/7866#issuecomment-702903624
+
+```bash
+cat > Containerfile << EOF
+FROM docker.io/library/fedora:34
+
+RUN dnf -y install httpd; dnf clean all; systemctl enable httpd
+
+EXPOSE 80
+
+CMD [ "/sbin/init" ]
+EOF
+
+podman \
+build \
+--file Containerfile \
+--tag systemd \
+.
+
+podman images
+
+podman \
+run \
+--interactive=true \
+--name=play-systemd \
+--publish=80:80 \
+--rm=true \
+--tty=true \
+localhost/systemd
+```
+
+```bash
+podman \
+exec \
+--interactive=true \
+--tty=true \
+play-systemd \
+bash \
+-c \
+"uname -a \
+&& echo \
+&& dnf --version"
+```
+
+
+```bash
+ cat > Containerfile << _EOF
+FROM registry.fedoraproject.org/fedora:32
+RUN dnf -y install systemd httpd
+RUN systemctl enable httpd
+EXPOSE 80
+CMD [ "/sbin/init" ]
+_EOF
+
+podman \
+build \
+--file=Containerfile \
+--tag=httpd . \
+&& podman \
+run \
+--interactive=true \
+--name=httpd \
+--rm=true \
+--tty=true \
+localhost/httpd
+```
+
+TODO: broken, seems like all images 35, 36 and latest are broken 
+      https://github.com/fedora-cloud/docker-brew-fedora/issues/100
+```bash
+podman \
+run \
+--interactive=true \
+--name=test-bug \
+--rm=true \
+--tty=true \
+registry.fedoraproject.org/fedora:36 \
+bash \
+-c \
+"yum update -y"
+```
+
+
+#### OCI Ubuntu 21.10 ran with podman to run systemd 
+
+```bash
+podman \
+run \
+--interactive=true \
+--rm=true \
+--tty=true \
+docker.io/library/ubuntu:21.10 \
+bash 
+```
+
+
+```bash
+cat > Containerfile << EOF
+FROM docker.io/library/ubuntu:21.10
+RUN DEBIAN_FRONTEND=noninteractive apt-get update \
+    && apt-get install -y --no-install-recommends -y \
+        lighttpd \
+        systemd \
+    && apt-get clean \
+    && apt-get -y autoremove \
+    && rm -rf /var/lib/apt/lists/*
+EXPOSE 80
+CMD [ "/usr/lib/systemd/systemd" ]
+EOF
+
+podman \
+build \
+--file=Containerfile \
+--tag=httpd . \
+&& podman \
+run \
+--interactive=true \
+--name=httpd \
+--rm=true \
+--tty=true \
+localhost/httpd
+```
+Refs.: https://unix.stackexchange.com/a/499585
+
+
+```bash
+podman \
+exec \
+--interactive=true \
+--tty=true \
+httpd \
+bash \
+-c \
+"uname -a \
+&& echo \
+&& systemctl --version \
+&& systemctl status | cat"
+```
