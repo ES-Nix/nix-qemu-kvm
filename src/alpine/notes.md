@@ -32,9 +32,98 @@ qemu-kvm \
 ```
 
 ```bash
+rm -fv alpine.qcow2 \
+&& qemu-img \
+create \
+-f qcow2 \
+alpine.qcow2 \
+8G \
+&& qemu-kvm \
+-m 512 \
+-nic user \
+-boot d \
+-cdrom alpine-virt-3.14.2-x86_64.iso \
+-hda alpine.qcow2 \
+-nographic \
+-enable-kvm \
+-cpu host \
+-smp $(nproc)
+```
+rm alpine.qcow2
+
+
+Type `root` and press enter:
+```bash
+root
+```
+
+```bash
 setup-alpine
 ```
 From: https://wiki.alpinelinux.org/wiki/Install_Alpine_in_Qemu
+
+```bash
+pt
+pt-nativo
+cat 
+eth0
+dhcp
+n
+UTC
+none
+openssh
+sda
+data
+y
+none
+/var/cache/apk
+```
+
+```bash
+{ cat << EOF > answerfile
+# Customised example answer file for setup-alpine script
+# If you don't want to use a certain option, then comment it out
+
+# Use US layout with US variant
+KEYMAPOPTS="us us"
+
+# Set hostname to 
+HOSTNAMEOPTS="-n alpine-vm-qemu-machine"
+
+# Contents of /etc/network/interfaces
+INTERFACESOPTS="auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+    hostname alpine-vm-qemu-machine
+"
+
+# Search domain of example.com, Google public nameserver
+DNSOPTS="-d example.com 8.8.8.8"
+
+# Set timezone to UTC
+TIMEZONEOPTS="-z UTC"
+
+# set http/ftp proxy
+PROXYOPTS="none"
+
+# Add a random mirror
+APKREPOSOPTS="-r"
+
+# Install Openssh
+SSHDOPTS="-c openssh"
+
+# Use openntpd
+NTPOPTS="-c openntpd"
+
+# Use /dev/sda as a data disk
+DISKOPTS="-m data /dev/sda"
+
+EOF
+} && setup-apkcache /var/cache/apk \
+&& setup-alpine -f answerfile
+```
 
 ```bash
 qemu-kvm \
@@ -61,7 +150,7 @@ echo 'nixuser ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/nixuser
 
 passwd nixuser
 ```
-Adapeted from: https://stackoverflow.com/a/54934781
+Adapted from: https://stackoverflow.com/a/54934781
 
 
 ```bash
