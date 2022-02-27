@@ -1009,11 +1009,12 @@ COMMANDS
 
 
 ```bash
-&& echo 'Start docker instalation...' \
+echo 'Start docker instalation...' \
 && curl -fsSL https://get.docker.com | sudo sh \
+&& getent group docker || sudo groupadd docker \
 && sudo usermod --append --groups docker "$USER" \
 && docker --version \
-&& echo 'End docker instalation!' \
+&& echo 'End docker instalation!'
 ```
 
 ```bash
@@ -2644,6 +2645,13 @@ nix store gc --verbose \
 --command bash -c 'vm-kill; run-vm-kvm && prepares-volume && ssh-vm'
 ```
 
+Do some thing inside the VM, for example, install nix and:
+
+```bash
+vm-kill; backup-current-state default \
+&& vm-kill; reset-to-backup && qemu-img resize disk.qcow2 +16G && ssh-vm
+```
+
 Useful to play with a snapshot:  
 ```bash
 nix \
@@ -2746,6 +2754,7 @@ echo 'Start minikube stuff...' \
 && echo 'End kubectl stuff...' \
 && echo 'Start docker instalation...' \
 && curl -fsSL https://get.docker.com | sudo sh \
+&& getent group docker || sudo groupadd docker \
 && sudo usermod --append --groups docker "$USER" \
 && docker --version \
 && echo 'End docker instalation!' \
@@ -3427,7 +3436,7 @@ podman \
 --version \
 && echo \
 && echo 'Start cni stuff...' \
-&& test -d /etc/containers || sudo mkdir /etc/containers \
+&& test -d /etc/containers || sudo mkdir -pv /etc/containers \
 && { sudo tee /etc/containers/containers.conf > /dev/null <<'EOF'
 [engine]
 events_logger = "file"
@@ -3955,3 +3964,196 @@ bash \
 && systemctl --version \
 && systemctl status | cat"
 ```
+
+
+#### OCI Ubuntu 21.10 ran with podman to run systemd 
+
+```bash
+podman \
+run \
+--interactive=true \
+--rm=true \
+--tty=true \
+docker.io/library/ubuntu:21.10 \
+bash 
+```
+
+
+```bash
+cat > Containerfile << EOF
+FROM docker.io/library/ubuntu:21.10
+RUN DEBIAN_FRONTEND=noninteractive apt-get update \
+    && apt-get install -y --no-install-recommends -y \
+        lighttpd \
+        systemd \
+    && apt-get clean \
+    && apt-get -y autoremove \
+    && rm -rf /var/lib/apt/lists/*
+EXPOSE 80
+CMD [ "/usr/lib/systemd/systemd" ]
+EOF
+
+podman \
+build \
+--file=Containerfile \
+--tag=httpd . \
+&& podman \
+run \
+--interactive=true \
+--name=httpd \
+--rm=true \
+--tty=true \
+localhost/httpd
+```
+Refs.: https://unix.stackexchange.com/a/499585
+
+
+```bash
+podman \
+exec \
+--interactive=true \
+--tty=true \
+httpd \
+bash \
+-c \
+"uname -a \
+&& echo \
+&& systemctl --version \
+&& systemctl status | cat"
+```
+
+
+```bash
+podman \
+run \
+--env=PATH=/root/.nix-profile/bin:/usr/bin:/bin \
+--interactive=true \
+--privileged=true \
+--tty=false \
+--rm=true \
+docker.nix-community.org/nixpkgs/nix-flakes \
+<<COMMANDS
+mkdir -p -m 0755 -v ~/.config/nix
+echo 'experimental-features = nix-command flakes ca-references ca-derivations' >> ~/.config/nix/nix.conf
+
+COMMANDS
+```
+
+
+```bash
+cat > Containerfile << EOF
+FROM docker.nix-community.org/nixpkgs/nix-flakes
+
+
+ENV PATH=/root/.nix-profile/bin:/usr/bin:/bin
+
+RUN nix profile install github:NixOS/nixpkgs/nixos-21.11#systemd github:NixOS/nixpkgs/nixos-21.11#apacheHttpd \
+    && nix store gc -v
+
+# RUN echo "$(nix eval --raw github:NixOS/nixpkgs/nixos-21.11#systemd)"
+ARG SYSTEMD_NIX_PATH=/nix/store/q0881awy50g4srnnwasci37y2jk5sf99-systemd-249.5
+#ENV SYSTEMD_NIX_PATH=/nix/store/q0881awy50g4srnnwasci37y2jk5sf99-systemd-249.5
+
+RUN echo "$SYSTEMD_NIX_PATH"
+RUN cp -rv /nix/store/q0881awy50g4srnnwasci37y2jk5sf99-systemd-249.5/share /usr/share
+RUN cp -rv /nix/store/q0881awy50g4srnnwasci37y2jk5sf99-systemd-249.5/lib /usr/lib
+
+EXPOSE 80
+CMD [ "/nix/store/q0881awy50g4srnnwasci37y2jk5sf99-systemd-249.5/bin/init" ]
+EOF
+
+podman \
+build \
+--file=Containerfile \
+--tag=nix-httpd .
+
+podman \
+run \
+--interactive=true \
+--name=nix-httpd-container \
+--privileged=true \
+--rm=true \
+--tty=true \
+localhost/nix-httpd
+```
+
+
+podman \
+run \
+--entrypoint=/bin/bash \
+--env=PATH=/root/.nix-profile/bin:/usr/bin:/bin \
+--interactive=true \
+--privileged=true \
+--rm=true \
+--tty=true \
+localhost/nix-httpd
+
+
+podman \
+run \
+--env=PATH=/root/.nix-profile/bin:/usr/bin:/bin \
+--interactive=true \
+--privileged=true \
+--tty=true \
+--rm=true \
+docker.nix-community.org/nixpkgs/nix-flakes
+
+
+Creating a diff in the filesystem's OCI image:
+```bash
+CONTAINER=cdiff
+
+podman \
+run \
+--name="$CONTAINER" \
+--interactive=true \
+--tty=false \
+--rm=false \
+--user='0' \
+docker.io/library/ubuntu:21.10 \
+bash \
+<< COMMANDS
+    apt-get update \
+    && apt-get install -y --no-install-recommends -y \
+        systemd \
+    && apt-get clean \
+    && apt-get -y autoremove \
+    && rm -rf /var/lib/apt/lists/*
+COMMANDS
+                     
+
+                                                                                                                                            
+rm -f oci_diff.txt                                                                                                                                               
+podman diff "$CONTAINER" > oci_diff.txt                                                                                                                          
+```
+
+
+```bash
+cat << EOF > "$HOME"/hello-world.sh
+#!/bin/bash
+while true; do echo 'Hello world: '$(date +"%Y/%m/%d %T.%N"); sleep $(shuf -i 1-3 -n 1); done
+EOF
+
+chmod a+x "$HOME"/hello-world.sh
+
+
+cat << EOF > /etc/systemd/system/hello-word.service
+[Unit]
+Description=Hello World Service Example
+After=systend-user-sessions.service
+
+[Service]
+Type=simple
+ExecStart=$HOME/hello-world.sh
+EOF
+
+systemctl start hello-world.service
+```
+
+
+```bash
+systemctl status hello-world.service
+
+journalctl -u -e hello-world
+```
+
