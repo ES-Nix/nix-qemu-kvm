@@ -3,4 +3,4 @@
 
 vm-kill
 
-ssh-vm-dev
+ssh-vm

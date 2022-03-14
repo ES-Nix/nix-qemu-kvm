@@ -1,6 +1,6 @@
 { pkgs ? import <nixpkgs> {} }:
 pkgs.stdenv.mkDerivation rec {
-          name = "ubuntu-qemu-kvm";
+          name = "ubuntu-qemu-kvm-dev";
           buildInputs = with pkgs; [ stdenv ];
           nativeBuildInputs = with pkgs; [ makeWrapper ];
           propagatedNativeBuildInputs = with pkgs; [
@@ -10,7 +10,7 @@ pkgs.stdenv.mkDerivation rec {
 
           ];
 
-          src = builtins.path { path = ./.; name = "ubuntu-qemu-kvm"; };
+          src = builtins.path { path = ./.; name = "ubuntu-qemu-kvm-dev"; };
           phases = [ "installPhase" ];
 
           unpackPhase = ":";
@@ -23,13 +23,13 @@ pkgs.stdenv.mkDerivation rec {
 
             install \
             -m0755 \
-            $out/ubuntu-qemu-kvm.sh \
+            $out/ubuntu-qemu-kvm-dev.sh \
             -D \
-            $out/bin/ubuntu-qemu-kvm
+            $out/bin/ubuntu-qemu-kvm-dev
 
-            patchShebangs $out/bin/ubuntu-qemu-kvm
+            patchShebangs $out/bin/ubuntu-qemu-kvm-dev
 
-            wrapProgram $out/bin/ubuntu-qemu-kvm \
+            wrapProgram $out/bin/ubuntu-qemu-kvm-dev \
               --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
           '';
 
