@@ -9,13 +9,13 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgsAllowUnfree = import nixpkgs {
-          system = "x86_64-linux";
+          inherit system;
           config = { allowUnfree = true; };
         };
 
         pkgs = nixpkgs.legacyPackages.${system};
       in
-      {
+      rec {
         packages.qemu = import ./qemu.nix {
           pkgs = nixpkgs.legacyPackages.${system};
         };
@@ -23,6 +23,16 @@
         defaultPackage = self.packages.${system}.qemu.vm;
 
         devShell = import ./shell.nix { inherit pkgs; };
+
+        # vm-kill; reset-to-backup && nix run .#ubuntu-qemu-kvm-dev
+
+        packages.ubuntu-qemu-kvm-dev = import ./ubuntu-qemu-kvm-dev.nix { inherit pkgs; };
+
+        apps.ubuntu-qemu-kvm-dev = flake-utils.lib.mkApp {
+          name = "ubuntu-qemu-kvm-dev";
+          drv = packages.ubuntu-qemu-kvm-dev;
+        };
+
       }
     );
 }

@@ -2599,6 +2599,18 @@ bash \
 'vm-kill; prepares-volume && ssh-vm-dev'
 ```
 
+```bash
+test -f result || nix build .# \
+&& nix \
+develop \
+.# \
+--refresh \
+--command \
+bash \
+-c \
+'vm-kill; prepares-volume && ssh-vm-dev'
+```
+
 
 ### Enable KVM, cgroup2 and more
 
