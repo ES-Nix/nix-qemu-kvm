@@ -28,9 +28,16 @@
 
         packages.ubuntu-qemu-kvm-dev = import ./ubuntu-qemu-kvm-dev.nix { inherit pkgs; };
 
+        packages.ubuntu-qemu-kvm = import ./ubuntu-qemu-kvm.nix { inherit pkgs; };
+
         apps.ubuntu-qemu-kvm-dev = flake-utils.lib.mkApp {
           name = "ubuntu-qemu-kvm-dev";
           drv = packages.ubuntu-qemu-kvm-dev;
+        };
+
+        apps.ubuntu-qemu-kvm = flake-utils.lib.mkApp {
+          name = "ubuntu-qemu-kvm";
+          drv = packages.ubuntu-qemu-kvm;
         };
 
       }
