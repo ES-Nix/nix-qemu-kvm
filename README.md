@@ -6,13 +6,31 @@ First working relevant commit:
 `nix develop github:ES-Nix/nix-qemu-kvm/23f67f69d185979829ae8fef9574a23b7f2b7525`
 
 
-```
+```bash
 nix build github:ES-Nix/nix-qemu-kvm/51c7b855f579d806969bef8d93b3ff96830ff294#qemu.prepare
 ./result/runVM
 ```
 
-## Intalling via git
+```bash
+nix \
+develop \
+github:ES-Nix/nix-qemu-kvm/dev \
+--command \
+bash \
+-c \
+'nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
+&& vm-kill; \
+   nix run github:ES-Nix/nix-qemu-kvm/dev#ubuntu-qemu-kvm'
 ```
+
+```bash
+sudo chown -Rv ubuntu:ubuntu "${HOME}" 2> /dev/null
+```
+
+## Installing via git
+
+
+```bash
 git clone https://github.com/ES-Nix/nix-qemu-kvm.git \
 && cd nix-qemu-kvm \
 && git checkout c16c4bed78398af43cd3d3f0f1ddb4491df5f479 \
@@ -2610,6 +2628,7 @@ bash \
 -c \
 'vm-kill; prepares-volume && ssh-vm-dev'
 ```
+
 
 
 ### Enable KVM, cgroup2 and more
