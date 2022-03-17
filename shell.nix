@@ -303,7 +303,7 @@ mkShell {
     prepares-volume
     resetToBackup
     run-vm-kvm
-    ssh-vm
+    # ssh-vm
     ssh-vm-dev
     ssh-vm-volume-dev-test
     volumeMountHack
