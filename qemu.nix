@@ -141,7 +141,7 @@ rec {
 
       qemu-img resize disk.qcow2 +${config.disk}
 
-      mkdir $out
+      mkdir -p $out/bin
 
       mv disk.qcow2 $out/disk.qcow2
 
@@ -171,7 +171,7 @@ rec {
       WRAP
       chmod +x $out/runVM
 
-      cat <<WRAP > $out/run-vm-kvm
+      cat <<WRAP > $out/bin/run-vm-kvm
       #!${pkgs.stdenv.shell}
       set -euo pipefail
       if [[ ! -f disk.qcow2 ]]; then
@@ -191,7 +191,7 @@ rec {
       echo "Press enter in a few seconds"
       exec ${runVM} disk.qcow2 userdata.qcow2 "\''${args[@]}" "\$@"
       WRAP
-      chmod +x $out/run-vm-kvm
+      chmod +x $out/bin/run-vm-kvm
 
       #
       cat <<WRAP > $out/refresh
@@ -264,8 +264,8 @@ rec {
       WRAP
       chmod +x $out/resetToBackup
 
-      cp --verbose ${sshClient} $out/ssh-vm
-      chmod +x $out/ssh-vm
+      cp --verbose ${sshClient} $out/bin/ssh-vm
+      chmod +x $out/bin/ssh-vm
 
       # Broken!
       cat <<WRAP > $out/prepares-volume

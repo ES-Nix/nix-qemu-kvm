@@ -9,7 +9,10 @@ pkgs.stdenv.mkDerivation rec {
 
             procps
             util-linux
-          ];
+          ]
+          ++
+          vm-utils
+          ;
 
           src = builtins.path { path = ./.; name = "ssh-vm"; };
           phases = [ "installPhase" ];
@@ -20,13 +23,6 @@ pkgs.stdenv.mkDerivation rec {
             mkdir -p $out/bin
 
             cp -r "${src}"/* $out
-
-            ls -al "${vm-utils}/ssh-vm"
-
-            # Hack my self code, sad life...
-            substituteInPlace $out/ssh-vm.sh \
-            --replace "run-vm-kvm" "${vm-utils}/run-vm-kvm" \
-            --replace "ssh-vm" "${vm-utils}/ssh-vm"
 
             install \
             -m0755 \
