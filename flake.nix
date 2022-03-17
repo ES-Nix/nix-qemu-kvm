@@ -16,19 +16,25 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
       rec {
+
+        # It should be groupped somehow
+        packages.vm-kill = import ./src/utils/vm-kill.nix { inherit pkgs; };
+
+        #
+
         packages.qemu = import ./qemu.nix {
           pkgs = nixpkgs.legacyPackages.${system};
         };
 
         defaultPackage = self.packages.${system}.qemu.vm;
 
-        devShell = import ./shell.nix { inherit pkgs; };
+        devShell = import ./shell.nix { inherit pkgs; utils = [ packages.vm-kill ]; };
 
         # vm-kill; reset-to-backup && nix run .#ubuntu-qemu-kvm-dev
 
-        packages.ubuntu-qemu-kvm-dev = import ./ubuntu-qemu-kvm-dev.nix { inherit pkgs; };
+        packages.ubuntu-qemu-kvm-dev = import ./src/utils/ubuntu-qemu-kvm-dev.nix { inherit pkgs; };
 
-        packages.ubuntu-qemu-kvm = import ./ubuntu-qemu-kvm.nix { inherit pkgs; vm-utils = self.packages.${system}.qemu.vm; };
+        packages.ubuntu-qemu-kvm = import ./src/utils/ubuntu-qemu-kvm.nix { inherit pkgs; vm-utils = self.packages.${system}.qemu.vm; };
 
         apps.ubuntu-qemu-kvm-dev = flake-utils.lib.mkApp {
           name = "ubuntu-qemu-kvm-dev";

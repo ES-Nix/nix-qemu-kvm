@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> { } }:
+{ pkgs ? import <nixpkgs> { }, utils }:
 with pkgs;
 let
   fooHook = stdenv.mkDerivation {
@@ -310,7 +310,10 @@ mkShell {
     installNix
     vmsshpoweroff
 
-  ];
+  ]
+  ++
+  utils
+  ;
 
   shellHook = ''
     echo 'Hello, you are in the nix shell!'

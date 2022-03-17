@@ -8,8 +8,8 @@ pkgs.stdenv.mkDerivation rec {
             coreutils
             qemu
 
-            (import ./src/vm-kill.nix { inherit pkgs;})
-            (import ./src/ssh-vm.nix { inherit pkgs; vm-utils = vm-utils;})
+            (import ./vm-kill.nix { inherit pkgs;})
+            (import ./ssh-vm.nix { inherit pkgs; vm-utils = vm-utils;})
           ];
 
           src = builtins.path { path = ./.; name = "ubuntu-qemu-kvm"; };
