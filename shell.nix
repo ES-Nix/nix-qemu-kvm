@@ -298,17 +298,17 @@ mkShell {
     wget
 
     # VMKill
-    backupCurrentState
-    clean-all
-    prepares-volume
-    resetToBackup
-    run-vm-kvm
-    # ssh-vm
-    ssh-vm-dev
-    ssh-vm-volume-dev-test
-    volumeMountHack
-    installNix
-    vmsshpoweroff
+#    backupCurrentState
+#    clean-all
+#    prepares-volume
+#    resetToBackup
+#    run-vm-kvm
+#    # ssh-vm
+#    ssh-vm-dev
+#    ssh-vm-volume-dev-test
+#    volumeMountHack
+#    installNix
+#    vmsshpoweroff
 
   ]
   ++
