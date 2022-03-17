@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
 
-vm-kill
+# vm-kill
 
 ssh-vm

@@ -1,18 +1,17 @@
-{ pkgs ? import <nixpkgs> {}, vm-utils }:
+{ pkgs ? import <nixpkgs> {} }:
 pkgs.stdenv.mkDerivation rec {
-          name = "ubuntu-qemu-kvm";
+          name = "vm-kill";
           buildInputs = with pkgs; [ stdenv ];
           nativeBuildInputs = with pkgs; [ makeWrapper ];
           propagatedNativeBuildInputs = with pkgs; [
             bash
             coreutils
-            qemu
 
-            (import ./src/vm-kill.nix { inherit pkgs;})
-            (import ./src/ssh-vm.nix { inherit pkgs; vm-utils = vm-utils;})
+            procps
+            util-linux
           ];
 
-          src = builtins.path { path = ./.; name = "ubuntu-qemu-kvm"; };
+          src = builtins.path { path = ./.; name = "vm-kill"; };
           phases = [ "installPhase" ];
 
           unpackPhase = ":";
@@ -25,13 +24,13 @@ pkgs.stdenv.mkDerivation rec {
 
             install \
             -m0755 \
-            $out/ubuntu-qemu-kvm.sh \
+            $out/vm-kill.sh \
             -D \
-            $out/bin/ubuntu-qemu-kvm
+            $out/bin/vm-kill
 
-            patchShebangs $out/bin/ubuntu-qemu-kvm
+            patchShebangs $out/bin/vm-kill
 
-            wrapProgram $out/bin/ubuntu-qemu-kvm \
+            wrapProgram $out/bin/vm-kill \
               --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
           '';
 

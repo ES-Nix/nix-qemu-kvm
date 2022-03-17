@@ -148,9 +148,9 @@ let
     echo 'WWWWWWW'
   '';
 
-  VMKill = writeShellScriptBin "vm-kill" ''
-    kill -9 $(pidof qemu-system-x86_64)
-  '';
+  # VMKill = writeShellScriptBin "vm-kill" ''
+  #  kill -9 $(pidof qemu-system-x86_64)
+  # '';
 
   clean-all = writeShellScriptBin "clean-all" ''
     result/clean_all
@@ -250,14 +250,14 @@ let
 COMMANDS
       '';
 
-  ssh-vm = writeShellScriptBin "ssh-vm" ''
-    test -d result \
-    || nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
-
-    pidof qemu-system-x86_64 \
-    || (result/run-vm-kvm < /dev/null &) \
-    && result/ssh-vm
-  '';
+  #ssh-vm = writeShellScriptBin "ssh-vm" ''
+  #  test -d result \
+  #  || nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
+  #
+  #  pidof qemu-system-x86_64 \
+  #  || (result/run-vm-kvm < /dev/null &) \
+  #  && result/ssh-vm
+  #'';
 
   ssh-vm-dev = writeShellScriptBin "ssh-vm-dev" ''
 
@@ -297,7 +297,7 @@ mkShell {
     qemu
     wget
 
-    VMKill
+    # VMKill
     backupCurrentState
     clean-all
     prepares-volume
