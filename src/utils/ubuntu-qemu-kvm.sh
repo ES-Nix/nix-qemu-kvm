@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
 
-# vm-kill
+vm-kill
+
+rm -fv disk.qcow2 userdata.qcow2
 
 ssh-vm
 
