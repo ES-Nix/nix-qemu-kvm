@@ -7,7 +7,7 @@ pkgs.stdenv.mkDerivation rec {
             bash
             coreutils
 
-            find
+            findutils
           ];
 
           src = builtins.path { path = ./.; name = "fix-volume-permission"; };
