@@ -45,7 +45,15 @@
 
         defaultPackage = self.packages.${system}.qemu.vm;
 
-        devShell = import ./shell.nix { inherit pkgs; utils = [ self.packages.${system}.vm-kill self.packages.${system}.qemu.vm ]; };
+        devShell = import ./shell.nix { inherit pkgs; utils = [
+          self.packages.${system}.vm-kill
+          self.packages.${system}.ssh-vm
+          self.packages.${system}.backup-current-state
+          self.packages.${system}.refresh
+          self.packages.${system}.reset-to-backup
+           
+          self.packages.${system}.qemu.vm ];
+        };
 
         # vm-kill; reset-to-backup && nix run .#ubuntu-qemu-kvm-dev
 
@@ -53,12 +61,6 @@
 
         packages.ubuntu-qemu-kvm = import ./src/utils/ubuntu-qemu-kvm.nix { inherit pkgs; vm-utils =
           [
-            self.packages.${system}.vm-kill
-            self.packages.${system}.ssh-vm
-            self.packages.${system}.backup-current-state
-            self.packages.${system}.refresh
-            self.packages.${system}.reset-to-backup
-
             self.packages.${system}.qemu.vm
           ]; };
 
