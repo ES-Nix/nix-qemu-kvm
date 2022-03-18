@@ -24,7 +24,27 @@ bash \
 ```
 
 ```bash
-sudo chown -Rv ubuntu:ubuntu "${HOME}" 2> /dev/null
+nix \
+run \
+github:ES-Nix/nix-qemu-kvm/dev#ubuntu-qemu-kvm 
+```
+
+
+```bash
+nix \
+run \
+github:ES-Nix/nix-qemu-kvm/dba4650119c30f768069651ba375009290c51f83#ubuntu-qemu-kvm
+```
+
+touch example.txt
+
+```bash
+# sudo chown -Rv ubuntu:ubuntu "${HOME}" 2> /dev/null
+# 
+# find "${HOME}" -not \( -path "${HOME}/code*" -prune \) -exec echo {} \;
+
+find "${HOME}" -not \( -path "${HOME}/code*" -prune \) -exec sudo chown -v ubuntu:ubuntu {} \;
+
 ```
 
 ## Installing via git
@@ -34,7 +54,7 @@ sudo chown -Rv ubuntu:ubuntu "${HOME}" 2> /dev/null
 git clone https://github.com/ES-Nix/nix-qemu-kvm.git \
 && cd nix-qemu-kvm \
 && git checkout c16c4bed78398af43cd3d3f0f1ddb4491df5f479 \
-&& nix build .#qemu.prepare \
+&& nix build .#myqemu.prepare \
 && ./result/runVM
 ```
 

@@ -1,18 +1,21 @@
 { pkgs ? import <nixpkgs> {}, vm-utils }:
 pkgs.stdenv.mkDerivation rec {
-          name = "ubuntu-qemu-kvm";
+          name = "ssh-vm-starts-vm-if-not-running";
           buildInputs = with pkgs; [ stdenv ];
           nativeBuildInputs = with pkgs; [ makeWrapper ];
           propagatedNativeBuildInputs = with pkgs; [
             bash
             coreutils
+
             qemu
 
-            (import ./vm-kill.nix { inherit pkgs;})
-            (import ./ssh-vm-starts-vm-if-not-running.nix { inherit pkgs; vm-utils = vm-utils;})
-          ];
+            (import ./ssh-vm.nix { inherit pkgs; })
+          ]
+          ++
+          vm-utils
+          ;
 
-          src = builtins.path { path = ./.; name = "ubuntu-qemu-kvm"; };
+          src = builtins.path { path = ./.; name = "ssh-vm-starts-vm-if-not-running"; };
           phases = [ "installPhase" ];
 
           unpackPhase = ":";
@@ -21,17 +24,16 @@ pkgs.stdenv.mkDerivation rec {
             mkdir -p $out/bin
 
             cp -r "${src}"/* $out
-            ls -al $out/
 
             install \
             -m0755 \
-            $out/ubuntu-qemu-kvm.sh \
+            $out/ssh-vm-starts-vm-if-not-running.sh \
             -D \
-            $out/bin/ubuntu-qemu-kvm
+            $out/bin/ssh-vm-starts-vm-if-not-running
 
-            patchShebangs $out/bin/ubuntu-qemu-kvm
+            patchShebangs $out/bin/ssh-vm-starts-vm-if-not-running
 
-            wrapProgram $out/bin/ubuntu-qemu-kvm \
+            wrapProgram $out/bin/ssh-vm-starts-vm-if-not-running \
               --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
           '';
 

@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}, vm-utils }:
+{ pkgs ? import <nixpkgs> {} }:
 pkgs.stdenv.mkDerivation rec {
           name = "ssh-vm";
           buildInputs = with pkgs; [ stdenv ];
@@ -7,11 +7,8 @@ pkgs.stdenv.mkDerivation rec {
             bash
             coreutils
 
-            procps
-            util-linux
+            openssh
           ]
-          ++
-          vm-utils
           ;
 
           src = builtins.path { path = ./.; name = "ssh-vm"; };
@@ -23,6 +20,9 @@ pkgs.stdenv.mkDerivation rec {
             mkdir -p $out/bin
 
             cp -r "${src}"/* $out
+
+            substituteInPlace $out/ssh-vm.sh \
+            --replace "./vagrant" "${src}/vagrant"
 
             install \
             -m0755 \

@@ -1,18 +1,16 @@
-{ pkgs ? import <nixpkgs> {}, vm-utils }:
+{ pkgs ? import <nixpkgs> {} }:
 pkgs.stdenv.mkDerivation rec {
-          name = "ubuntu-qemu-kvm";
+          name = "backup-current-state";
           buildInputs = with pkgs; [ stdenv ];
           nativeBuildInputs = with pkgs; [ makeWrapper ];
           propagatedNativeBuildInputs = with pkgs; [
             bash
             coreutils
-            qemu
 
-            (import ./vm-kill.nix { inherit pkgs;})
-            (import ./ssh-vm-starts-vm-if-not-running.nix { inherit pkgs; vm-utils = vm-utils;})
-          ];
+          ]
+          ;
 
-          src = builtins.path { path = ./.; name = "ubuntu-qemu-kvm"; };
+          src = builtins.path { path = ./.; name = "backup-current-state"; };
           phases = [ "installPhase" ];
 
           unpackPhase = ":";
@@ -21,17 +19,16 @@ pkgs.stdenv.mkDerivation rec {
             mkdir -p $out/bin
 
             cp -r "${src}"/* $out
-            ls -al $out/
 
             install \
             -m0755 \
-            $out/ubuntu-qemu-kvm.sh \
+            $out/backup-current-state.sh \
             -D \
-            $out/bin/ubuntu-qemu-kvm
+            $out/bin/backup-current-state
 
-            patchShebangs $out/bin/ubuntu-qemu-kvm
+            patchShebangs $out/bin/backup-current-state
 
-            wrapProgram $out/bin/ubuntu-qemu-kvm \
+            wrapProgram $out/bin/backup-current-state \
               --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
           '';
 

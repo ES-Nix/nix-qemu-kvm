@@ -1,18 +1,18 @@
 { pkgs ? import <nixpkgs> {}, vm-utils }:
 pkgs.stdenv.mkDerivation rec {
-          name = "ubuntu-qemu-kvm";
+          name = "vm-clear-all-qcow2-and-img";
           buildInputs = with pkgs; [ stdenv ];
           nativeBuildInputs = with pkgs; [ makeWrapper ];
           propagatedNativeBuildInputs = with pkgs; [
             bash
             coreutils
-            qemu
 
-            (import ./vm-kill.nix { inherit pkgs;})
-            (import ./ssh-vm-starts-vm-if-not-running.nix { inherit pkgs; vm-utils = vm-utils;})
-          ];
+          ]
+          ++
+          vm-utils
+          ;
 
-          src = builtins.path { path = ./.; name = "ubuntu-qemu-kvm"; };
+          src = builtins.path { path = ./.; name = "vm-clear-all-qcow2-and-img"; };
           phases = [ "installPhase" ];
 
           unpackPhase = ":";
@@ -21,17 +21,16 @@ pkgs.stdenv.mkDerivation rec {
             mkdir -p $out/bin
 
             cp -r "${src}"/* $out
-            ls -al $out/
 
             install \
             -m0755 \
-            $out/ubuntu-qemu-kvm.sh \
+            $out/vm-clear-all-qcow2-and-img.sh \
             -D \
-            $out/bin/ubuntu-qemu-kvm
+            $out/bin/vm-clear-all-qcow2-and-img
 
-            patchShebangs $out/bin/ubuntu-qemu-kvm
+            patchShebangs $out/bin/vm-clear-all-qcow2-and-img
 
-            wrapProgram $out/bin/ubuntu-qemu-kvm \
+            wrapProgram $out/bin/vm-clear-all-qcow2-and-img \
               --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
           '';
 

@@ -1,9 +1,22 @@
 #!/usr/bin/env bash
 
 
-# test -d result \
-# || nix build github:ES-Nix/nix-qemu-kvm/dev#qemu.vm \
+SSH_KEY=$(mktemp)
+trap 'rm $SSH_KEY' EXIT
+cp ./vagrant "$SSH_KEY"
+chmod 0600 "$SSH_KEY"
 
-pidof qemu-system-x86_64 \
-|| (run-vm-kvm < /dev/null &) \
-&& ssh-vm
+until ssh \
+  -X \
+  -Y \
+  -o GlobalKnownHostsFile=/dev/null \
+  -o UserKnownHostsFile=/dev/null \
+  -o StrictHostKeyChecking=no \
+  -o LogLevel=ERROR \
+  -i "$SSH_KEY" \
+  ubuntu@127.0.0.1 \
+  -p 10022 \
+  "$@"; do
+  ((c++)) && ((c==60)) && break
+  sleep 1
+done
