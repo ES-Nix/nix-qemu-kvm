@@ -21,7 +21,8 @@
         packages.vm-kill = import ./src/utils/vm-kill.nix { inherit pkgs; };
         packages.ssh-vm-starts-vm-if-not-running = import ./src/utils/ssh-vm-starts-vm-if-not-running.nix { inherit pkgs; vm-utils =
           [
-            self.packages.${system}.vm-refactor.vm
+            # self.packages.${system}.vm-refactor.vm
+            self.packages.${system}.qemu.vm
           ];};
         packages.ssh-vm = import ./src/utils/ssh-vm.nix { inherit pkgs; };
         packages.backup-current-state = import ./src/utils/backup-current-state.nix { inherit pkgs; };
@@ -49,6 +50,7 @@
         devShell = import ./shell.nix { inherit pkgs; utils = [
           self.packages.${system}.vm-kill
           self.packages.${system}.ssh-vm
+          self.packages.${system}.ssh-vm-starts-vm-if-not-running
           self.packages.${system}.backup-current-state
           self.packages.${system}.refresh
           self.packages.${system}.reset-to-backup

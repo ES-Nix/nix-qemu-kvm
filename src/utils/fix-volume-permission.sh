@@ -47,3 +47,13 @@ sudo chown -v "$NEW_UID":"$NEW_GID" "$HOME"/. "$HOME"/.Xauthority "$HOME"/.profi
 
 # && sed -i '/^users/s/:[0-9]*:/:978:/g' /etc/group
 sudo su -c "sed -i -e 's/^\(ubuntu:[^:]\):[0-9]*:[0-9]*:/\1:${NEW_UID}:${NEW_GID}:/' /etc/passwd && sed -i '/^ubuntu/s/:[0-9]*:/:${NEW_GID}:/g' /etc/group && reboot"
+
+
+cat "$(nix eval --raw --refresh github:ES-Nix/nix-qemu-kvm/dev#fix-volume-permission)"/fix-volume-permission.sh
+
+
+ssh-vm << COMMANDS
+id
+COMMANDS
+
+ssh-vm < <(cat "$(nix eval --raw --refresh github:ES-Nix/nix-qemu-kvm/dev#fix-volume-permission)"/fix-volume-permission.sh)

@@ -12,7 +12,7 @@ fi
 # cp --verbose "$backup_name".disk.qcow2.backup disk.qcow2
 # cp --verbose "$backup_name".userdata.qcow2.backup userdata.qcow2
 
-echo 'Start reset to backup...'
+echo 'Start reset to backup named '"$backup_name"
 dd if="$backup_name".disk.qcow2.backup of=disk.qcow2 iflag=direct oflag=direct bs=4M conv=sparse
 dd if="$backup_name".userdata.qcow2.backup of=userdata.qcow2 iflag=direct oflag=direct bs=4M conv=sparse
-echo 'End reset to backup...'
+echo 'End reset to backup name '"$backup_name"
