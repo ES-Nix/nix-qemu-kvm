@@ -49,7 +49,7 @@ fi
 ssh-vm-starts-vm-if-not-running < <(cat "${STORE_PATH_OF_SOURCE_SCRIPT}"/fix-volume-permission.sh)
 
 # The VM should be off at this point.
-if [ ! "${BACKUP}" ]; then
+if [ "${BACKUP}" ]; then
   backup-current-state
 fi
 
