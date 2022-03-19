@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}, vm-utils }:
+{ pkgs ? import <nixpkgs> {} }:
 pkgs.stdenv.mkDerivation rec {
           name = "ubuntu-qemu-kvm-with-volume";
           buildInputs = with pkgs; [ stdenv ];
@@ -10,7 +10,7 @@ pkgs.stdenv.mkDerivation rec {
 
             (import ./vm-kill.nix { inherit pkgs;})
             (import ./backup-current-state.nix { inherit pkgs;})
-            (import ./ssh-vm-starts-vm-if-not-running.nix { inherit pkgs; vm-utils = vm-utils;})
+            (import ./ssh-vm-starts-vm-if-not-running.nix { inherit pkgs; })
           ];
 
           src = builtins.path { path = ./.; name = "ubuntu-qemu-kvm-with-volume"; };

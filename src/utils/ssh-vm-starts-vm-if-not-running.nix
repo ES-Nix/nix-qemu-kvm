@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}, vm-utils }:
+{ pkgs ? import <nixpkgs> {} }:
 pkgs.stdenv.mkDerivation rec {
           name = "ssh-vm-starts-vm-if-not-running";
           buildInputs = with pkgs; [ stdenv ];
@@ -10,6 +10,7 @@ pkgs.stdenv.mkDerivation rec {
             qemu
 
             (import ./ssh-vm.nix { inherit pkgs; })
+            (import ./run-vm-kvm.nix { inherit pkgs; })
           ];
 
           src = builtins.path { path = ./.; name = "ssh-vm-starts-vm-if-not-running"; };

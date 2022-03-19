@@ -19,11 +19,7 @@
 
         # It should be groupped somehow
         packages.vm-kill = import ./src/utils/vm-kill.nix { inherit pkgs; };
-        packages.ssh-vm-starts-vm-if-not-running = import ./src/utils/ssh-vm-starts-vm-if-not-running.nix { inherit pkgs; vm-utils =
-          [
-            # self.packages.${system}.vm-refactor.vm
-            self.packages.${system}.qemu.vm
-          ];};
+        packages.ssh-vm-starts-vm-if-not-running = import ./src/utils/ssh-vm-starts-vm-if-not-running.nix { inherit pkgs; };
         packages.ssh-vm = import ./src/utils/ssh-vm.nix { inherit pkgs; };
         packages.backup-current-state = import ./src/utils/backup-current-state.nix { inherit pkgs; };
         packages.refresh = import ./src/utils/refresh.nix { inherit pkgs; };
@@ -41,8 +37,8 @@
 
         packages.vm-refactor = import ./src/utils/vm-refactor.nix {
           pkgs = nixpkgs.legacyPackages.${system};
-          runVM = self.packages.${system}.runVM;
-          run-vm-kvm = self.packages.${system}.run-vm-kvm;
+          # runVM = self.packages.${system}.runVM;
+          # run-vm-kvm = self.packages.${system}.run-vm-kvm;
         };
 
         defaultPackage = self.packages.${system}.qemu.vm;
@@ -64,17 +60,10 @@
 
         packages.ubuntu-qemu-kvm-dev = import ./src/utils/ubuntu-qemu-kvm-dev.nix { inherit pkgs; };
 
-        packages.ubuntu-qemu-kvm = import ./src/utils/ubuntu-qemu-kvm.nix { inherit pkgs; vm-utils =
-          [
-            # self.packages.${system}.qemu.vm
-            self.packages.${system}.vm-refactor.vm
-          ]; };
+        packages.ubuntu-qemu-kvm = import ./src/utils/ubuntu-qemu-kvm.nix { inherit pkgs; };
 
         packages.ubuntu-qemu-kvm-with-volume = import ./src/utils/ubuntu-qemu-kvm-with-volume.nix {
           inherit pkgs;
-          vm-utils = [
-            self.packages.${system}.qemu.vm
-          ];
         };
 
         apps.ubuntu-qemu-kvm-dev = flake-utils.lib.mkApp {

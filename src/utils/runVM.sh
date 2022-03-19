@@ -5,9 +5,11 @@
 # Starts the VM with the given system image
 #
 set -euo pipefail
+
+
 image=$1
 userdata=$2
-shift 3
+shift 2
 
 echo $image
 echo $userdata

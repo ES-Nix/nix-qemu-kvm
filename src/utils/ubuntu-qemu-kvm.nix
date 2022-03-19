@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}, vm-utils }:
+{ pkgs ? import <nixpkgs> {} }:
 pkgs.stdenv.mkDerivation rec {
           name = "ubuntu-qemu-kvm";
           buildInputs = with pkgs; [ stdenv ];
@@ -8,7 +8,7 @@ pkgs.stdenv.mkDerivation rec {
             coreutils
 
             (import ./vm-kill.nix { inherit pkgs;})
-            (import ./ssh-vm-starts-vm-if-not-running.nix { inherit pkgs; vm-utils = vm-utils;})
+            (import ./ssh-vm-starts-vm-if-not-running.nix { inherit pkgs; })
           ];
 
           src = builtins.path { path = ./.; name = "ubuntu-qemu-kvm"; };
@@ -20,7 +20,8 @@ pkgs.stdenv.mkDerivation rec {
             mkdir -p $out/bin
 
             cp -r "${src}"/* $out
-            ls -al $out/
+
+            # ls -al $out/
 
             install \
             -m0755 \

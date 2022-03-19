@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 
-number_of_arguments="$#"
 
+number_of_arguments="$#"
 
 while [ $number_of_arguments -gt 0 ]; do
   # echo '$# '$#

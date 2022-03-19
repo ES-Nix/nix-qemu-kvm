@@ -1,4 +1,4 @@
-{ pkgs ?  import <nixpkgs> {}, runVM, run-vm-kvm }:
+{ pkgs ?  import <nixpkgs> {} }:
 let
   img_orig = "ubuntu-21.04-server-cloudimg-amd64.img";
   img_orig-20-04 = "ubuntu-20.04-server-cloudimg-amd64.img";
@@ -8,16 +8,6 @@ let
   user_password = "b";
 in
 rec {
-
-#  image = pkgs.fetchurl {
-#    url = "https://cloud-images.ubuntu.com/releases/hirsute/release-20210817/${img_orig}";
-#    hash = "sha256-q6v8JQ0RIG93mHa42s/o2/u+y6Q2UKGWJiQCQnZA29M=";
-#  };
-
-  image-20-04 = pkgs.fetchurl {
-    url = "https://cloud-images.ubuntu.com/releases/focal/release-20201102/${img_orig}";
-    hash = "sha256-6/jnDBe5WmGy3K+EajY3yZyvQ0itcUcNOnAf0aTFOUY=";
-  };
 
   image = pkgs.fetchurl {
     url = "https://cloud-images.ubuntu.com/releases/18.04/release/ubuntu-18.04-server-cloudimg-amd64.img";
@@ -56,9 +46,9 @@ rec {
 
     # Source of magic number msize=262144
     # https://askubuntu.com/questions/548208/sharing-folder-with-vm-through-libvirt-9p-permission-denied/1259833#1259833
-    mounts = [
-      [ "hostshare" "/home/ubuntu/code" "9p" "defaults,trans=virtio,access=any,version=9p2000.L,cache=none,msize=262144,rw" ]
-    ];
+    # mounts = [
+    #  [ "hostshare" "/home/ubuntu/code" "9p" "defaults,trans=virtio,access=any,version=9p2000.L,cache=none,msize=262144,rw" ]
+    #];
   };
 
   # Generate the initial user data disk. This contains extra configuration
