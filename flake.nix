@@ -67,6 +67,13 @@
             self.packages.${system}.qemu.vm
           ]; };
 
+        packages.ubuntu-qemu-kvm-with-volume = import ./src/utils/ubuntu-qemu-kvm-with-volume.nix {
+          inherit pkgs;
+          vm-utils = [
+            self.packages.${system}.qemu.vm
+          ];
+        };
+
         apps.ubuntu-qemu-kvm-dev = flake-utils.lib.mkApp {
           name = "ubuntu-qemu-kvm-dev";
           drv = packages.ubuntu-qemu-kvm-dev;
@@ -75,6 +82,11 @@
         apps.ubuntu-qemu-kvm = flake-utils.lib.mkApp {
           name = "ubuntu-qemu-kvm";
           drv = packages.ubuntu-qemu-kvm;
+        };
+
+        apps.ubuntu-qemu-kvm-with-volume = flake-utils.lib.mkApp {
+          name = "ubuntu-qemu-kvm-with-volume";
+          drv = packages.ubuntu-qemu-kvm-with-volume;
         };
 
         apps.vm-refactor = flake-utils.lib.mkApp {

@@ -1,17 +1,19 @@
 { pkgs ? import <nixpkgs> {}, vm-utils }:
 pkgs.stdenv.mkDerivation rec {
-          name = "ubuntu-qemu-kvm";
+          name = "ubuntu-qemu-kvm-with-volume";
           buildInputs = with pkgs; [ stdenv ];
           nativeBuildInputs = with pkgs; [ makeWrapper ];
           propagatedNativeBuildInputs = with pkgs; [
             bash
             coreutils
+            qemu
 
             (import ./vm-kill.nix { inherit pkgs;})
+            (import ./backup-current-state.nix { inherit pkgs;})
             (import ./ssh-vm-starts-vm-if-not-running.nix { inherit pkgs; vm-utils = vm-utils;})
           ];
 
-          src = builtins.path { path = ./.; name = "ubuntu-qemu-kvm"; };
+          src = builtins.path { path = ./.; name = "ubuntu-qemu-kvm-with-volume"; };
           phases = [ "installPhase" ];
 
           unpackPhase = ":";
@@ -24,13 +26,13 @@ pkgs.stdenv.mkDerivation rec {
 
             install \
             -m0755 \
-            $out/ubuntu-qemu-kvm.sh \
+            $out/ubuntu-qemu-kvm-with-volume.sh \
             -D \
-            $out/bin/ubuntu-qemu-kvm
+            $out/bin/ubuntu-qemu-kvm-with-volume
 
-            patchShebangs $out/bin/ubuntu-qemu-kvm
+            patchShebangs $out/bin/ubuntu-qemu-kvm-with-volume
 
-            wrapProgram $out/bin/ubuntu-qemu-kvm \
+            wrapProgram $out/bin/ubuntu-qemu-kvm-with-volume \
               --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
           '';
 
