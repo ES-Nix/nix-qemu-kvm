@@ -36,7 +36,11 @@ run \
 github:ES-Nix/nix-qemu-kvm/dba4650119c30f768069651ba375009290c51f83#ubuntu-qemu-kvm
 ```
 
-touch example.txt
+```bash
+nix develop --refresh github:ES-Nix/nix-qemu-kvm/dev
+nix run --refresh github:ES-Nix/nix-qemu-kvm/dev#ubuntu-qemu-kvm-with-volume -- --backup 'true'
+```
+
 
 ```bash
 # sudo chown -Rv ubuntu:ubuntu "${HOME}" 2> /dev/null
