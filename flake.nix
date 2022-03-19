@@ -54,6 +54,7 @@
           self.packages.${system}.backup-current-state
           self.packages.${system}.refresh
           self.packages.${system}.reset-to-backup
+          self.packages.${system}.ubuntu-qemu-kvm-with-volume
 
           self.packages.${system}.qemu.vm ];
         };
