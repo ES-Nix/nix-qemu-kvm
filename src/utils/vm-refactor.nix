@@ -80,20 +80,76 @@ rec {
       qemu-img convert -p -f raw userdata.raw -O qcow2 "$out"
     '';
 
-  vm = pkgs.runCommand "vm" { buildInputs = with pkgs;[ qemu run-vm-kvm ]; }
+  vm = pkgs.runCommand "vm" { buildInputs = [ pkgs.qemu ]; }
     ''
       # Make some room on the root image
       cp --reflink=auto "${image}" disk.qcow2
       chmod +w disk.qcow2
 
       qemu-img resize disk.qcow2 +${config.disk}
+      chmod +w disk.qcow2
 
       mkdir -p $out/bin
 
-      cp disk.qcow2 $out/disk.qcow2
+      mv disk.qcow2 $out/disk.qcow2
 
       ln -s ${userdata} $out/userdata.qcow2
 
-      run-vm-kvm disk.qcow2 "${userdata}"
+      cat <<WRAP > $out/bin/run-vm-kvm
+      #!${pkgs.stdenv.shell}
+      set -euo pipefail
+      if [[ ! -f disk.qcow2 ]]; then
+        # Setup the VM configuration on boot
+        cp --reflink=auto "$out/disk.qcow2" disk.qcow2
+        cp --reflink=auto "$out/userdata.qcow2" userdata.qcow2
+        chmod +w disk.qcow2 userdata.qcow2
+      fi
+
+      # And finally boot qemu with a bunch of arguments
+      args=(
+        # Share the nix folder with the guest
+        # -virtfs "local,security_model=none,id=fsdev0,path=\$PWD,readonly=off,mount_tag=hostshare"
+      )
+      echo "Starting VM."
+      echo "To login: ubuntu / ubuntu"
+      echo "To quit: type 'Ctrl+a c' then 'quit'"
+      echo "Press enter in a few seconds"
+      exec ${runVM} disk.qcow2 userdata.qcow2 "\''${args[@]}" "\$@"
+      WRAP
+      chmod +x $out/bin/run-vm-kvm
+
     '';
+
+  runVM = pkgs.writeShellScript "runVM" ''
+    #
+    # Starts the VM with the given system image
+    #
+    set -euo pipefail
+    image=$1
+    userdata=$2
+    shift 2
+
+    args=(
+      -drive "file=$image,format=qcow2"
+      -drive "file=$userdata,format=qcow2"
+      -enable-kvm
+      -m 18G
+      -nographic
+      -serial mon:stdio
+      -smp 4
+      -device "rtl8139,netdev=net0"
+      -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:22"
+      -cpu Haswell-noTSX-IBRS,vmx=on
+      -cpu host
+#      -fsdev local,security_model=passthrough,id=fsdev0,path="\$(pwd)"
+#      -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare
+    )
+
+    set -x
+
+    echo "\''${args[@]}"
+
+    exec ${pkgs.qemu}/bin/qemu-system-x86_64 "''${args[@]}" "$@" >/dev/null 2>&1
+  '';
+
 }

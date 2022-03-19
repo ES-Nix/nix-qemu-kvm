@@ -10,10 +10,7 @@ pkgs.stdenv.mkDerivation rec {
             qemu
 
             (import ./ssh-vm.nix { inherit pkgs; })
-          ]
-          ++
-          vm-utils
-          ;
+          ];
 
           src = builtins.path { path = ./.; name = "ssh-vm-starts-vm-if-not-running"; };
           phases = [ "installPhase" ];

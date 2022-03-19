@@ -66,7 +66,8 @@
 
         packages.ubuntu-qemu-kvm = import ./src/utils/ubuntu-qemu-kvm.nix { inherit pkgs; vm-utils =
           [
-            self.packages.${system}.qemu.vm
+            # self.packages.${system}.qemu.vm
+            self.packages.${system}.vm-refactor.vm
           ]; };
 
         packages.ubuntu-qemu-kvm-with-volume = import ./src/utils/ubuntu-qemu-kvm-with-volume.nix {

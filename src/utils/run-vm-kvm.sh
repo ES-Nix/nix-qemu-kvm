@@ -27,4 +27,4 @@ echo "Press enter in a few seconds"
 # type runVM
 
 ls -al
-exec -a runVM ./disk.qcow2 ./userdata.qcow2 "${args[@]}" "$@"
+exec -a runVM disk.qcow2 userdata.qcow2 "${args[@]}" "$@"
