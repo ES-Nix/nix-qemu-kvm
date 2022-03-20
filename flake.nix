@@ -117,10 +117,10 @@
         };
 
         checks = {
-          # nixpkgsFmt = pkgs.runCommand "check-nix-format" { } ''
-          #  ${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt --check ${./.}
-          #  mkdir $out #success
-          # '';
+          nixpkgsFmt = pkgs.runCommand "check-nix-format" { } ''
+            ${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt --check ${./.}
+            mkdir $out #success
+          '';
           # find . -type f -iname '*.nix' -exec nixpkgs-fmt {} \;
 
         } // packages;
