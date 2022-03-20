@@ -37,13 +37,14 @@ in
             bash
             coreutils # We use pwd binary at run time
 
-            cloud-utils
             yj
             qemu
 
             (import ./runVM-with-volume.nix { inherit pkgs;})
           ]
-          ;
+         ++
+            (if stdenv.isDarwin then [ ]
+            else [ cloud-utils ]);
 
           src = builtins.path { path = ./.; name = "run-vm-kvm-with-volume"; };
           phases = [ "installPhase" ];

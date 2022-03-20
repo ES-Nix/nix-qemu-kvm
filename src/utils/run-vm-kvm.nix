@@ -31,12 +31,13 @@ in
             bash
             coreutils
 
-            cloud-utils
-            yj
             qemu
+            yj
             (import ./runVM.nix { inherit pkgs;})
           ]
-          ;
+         ++
+            (if stdenv.isDarwin then [ ]
+            else [ cloud-utils ]);
 
           src = builtins.path { path = ./.; name = "run-vm-kvm"; };
           phases = [ "installPhase" ];

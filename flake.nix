@@ -29,22 +29,32 @@
         packages.run-vm-kvm = import ./src/utils/run-vm-kvm.nix { inherit pkgs; };
         packages.run-vm-kvm-with-volume = import ./src/utils/run-vm-kvm-with-volume.nix { inherit pkgs; };
         packages.fix-volume-permission = import ./src/utils/fix-volume-permission.nix { inherit pkgs; };
-
         #
 
-        packages.qemu = import ./qemu.nix {
-          pkgs = nixpkgs.legacyPackages.${system};
+        # packages.qemu = import ./qemu.nix {
+        #  pkgs = nixpkgs.legacyPackages.${system};
+        # };
+        #
+        # packages.vm-refactor = import ./src/utils/vm-refactor.nix {
+        #  pkgs = nixpkgs.legacyPackages.${system};
+        #  # runVM = self.packages.${system}.runVM;
+        #  # run-vm-kvm = self.packages.${system}.run-vm-kvm;
+        # };
+
+        defaultPackage = self.packages.${system}.ubuntu-qemu-kvm;
+
+        packages.ubuntu-qemu-kvm = import ./src/utils/ubuntu-qemu-kvm.nix { inherit pkgs; };
+
+        packages.ubuntu-qemu-kvm-dev = import ./src/utils/ubuntu-qemu-kvm-dev.nix { inherit pkgs; };
+
+        packages.ubuntu-qemu-kvm-with-volume = import ./src/utils/ubuntu-qemu-kvm-with-volume.nix {
+          inherit pkgs;
         };
 
-        packages.vm-refactor = import ./src/utils/vm-refactor.nix {
-          pkgs = nixpkgs.legacyPackages.${system};
-          # runVM = self.packages.${system}.runVM;
-          # run-vm-kvm = self.packages.${system}.run-vm-kvm;
-        };
+        # `nix develop`
+        devShells.default = pkgs.mkShell {
 
-        defaultPackage = self.packages.${system}.qemu.vm;
-
-        devShell = import ./shell.nix { inherit pkgs; utils = [
+          buildInputs = with pkgs; [
           self.packages.${system}.vm-kill
           self.packages.${system}.ssh-vm
           self.packages.${system}.ssh-vm-starts-vm-if-not-running
@@ -54,17 +64,40 @@
           self.packages.${system}.ubuntu-qemu-kvm
           self.packages.${system}.ubuntu-qemu-kvm-with-volume
 
-          self.packages.${system}.qemu.vm ];
+#           self.packages.${system}.qemu.vm
+
+            nixpkgs-fmt
+            # shellcheck # ghc-8.10.6
+            findutils
+
+          ];
+
+          shellHook = ''
+            # TODO: document this
+            export TMPDIR=/tmp
+
+            # find . -type f -iname '*.nix' -exec nixpkgs-fmt {} \;
+          '';
         };
 
-        # vm-kill; reset-to-backup && nix run .#ubuntu-qemu-kvm-dev
+#        devShell = import ./shell.nix { inherit pkgs; utils = [
+##          self.packages.${system}.vm-kill
+##          self.packages.${system}.ssh-vm
+##          self.packages.${system}.ssh-vm-starts-vm-if-not-running
+##          self.packages.${system}.backup-current-state
+##          self.packages.${system}.refresh
+##          self.packages.${system}.reset-to-backup
+##          self.packages.${system}.ubuntu-qemu-kvm
+##          self.packages.${system}.ubuntu-qemu-kvm-with-volume
+#
+#          # self.packages.${system}.qemu.vm
+#          ];
+#        };
 
-        packages.ubuntu-qemu-kvm-dev = import ./src/utils/ubuntu-qemu-kvm-dev.nix { inherit pkgs; };
-
-        packages.ubuntu-qemu-kvm = import ./src/utils/ubuntu-qemu-kvm.nix { inherit pkgs; };
-
-        packages.ubuntu-qemu-kvm-with-volume = import ./src/utils/ubuntu-qemu-kvm-with-volume.nix {
-          inherit pkgs;
+        defaultApp = apps.ubuntu-qemu-kvm;
+        apps.ubuntu-qemu-kvm = flake-utils.lib.mkApp {
+          name = "ubuntu-qemu-kvm";
+          drv = packages.ubuntu-qemu-kvm;
         };
 
         apps.ubuntu-qemu-kvm-dev = flake-utils.lib.mkApp {
@@ -72,24 +105,19 @@
           drv = packages.ubuntu-qemu-kvm-dev;
         };
 
-        apps.ubuntu-qemu-kvm = flake-utils.lib.mkApp {
-          name = "ubuntu-qemu-kvm";
-          drv = packages.ubuntu-qemu-kvm;
-        };
-
         apps.ubuntu-qemu-kvm-with-volume = flake-utils.lib.mkApp {
           name = "ubuntu-qemu-kvm-with-volume";
           drv = packages.ubuntu-qemu-kvm-with-volume;
         };
 
-        apps.vm-refactor = flake-utils.lib.mkApp {
-          name = "vm-refactor";
-          drv = packages.vm-refactor;
-        };
+        # apps.vm-refactor = flake-utils.lib.mkApp {
+        #  name = "vm-refactor";
+        #  drv = packages.vm-refactor;
+        # };
 
         apps.runVM = flake-utils.lib.mkApp {
           name = "runVM";
-          drv = packages.vm-refactor;
+          drv = packages.runVM;
         };
 
         apps.ssh-vm-starts-vm-if-not-running = flake-utils.lib.mkApp {
@@ -102,6 +130,16 @@
           drv = packages.fix-volume-permission;
         };
 
+        checks = {
+          # nixpkgsFmt = pkgs.runCommand "check-nix-format" { } ''
+          #  ${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt --check ${./.}
+          #  mkdir $out #success
+          # '';
+          # find . -type f -iname '*.nix' -exec nixpkgs-fmt {} \;
+
+        } // packages;
       }
+
+
     );
 }
