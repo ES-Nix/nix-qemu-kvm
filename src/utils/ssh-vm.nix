@@ -1,39 +1,38 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> { } }:
 pkgs.stdenv.mkDerivation rec {
-          name = "ssh-vm";
-          buildInputs = with pkgs; [ stdenv ];
-          nativeBuildInputs = with pkgs; [ makeWrapper ];
-          propagatedNativeBuildInputs = with pkgs; [
-            bash
-            coreutils
+  name = "ssh-vm";
+  buildInputs = with pkgs; [ stdenv ];
+  nativeBuildInputs = with pkgs; [ makeWrapper ];
+  propagatedNativeBuildInputs = with pkgs; [
+    bash
+    coreutils
 
-            openssh
-          ]
-          ;
+    openssh
+  ];
 
-          src = builtins.path { path = ./.; name = "ssh-vm"; };
-          phases = [ "installPhase" ];
+  src = builtins.path { path = ./.; name = "ssh-vm"; };
+  phases = [ "installPhase" ];
 
-          unpackPhase = ":";
+  unpackPhase = ":";
 
-          installPhase = ''
-            mkdir -p $out/bin
+  installPhase = ''
+    mkdir -p $out/bin
 
-            cp -r "${src}"/* $out
+    cp -r "${src}"/* $out
 
-            substituteInPlace $out/ssh-vm.sh \
-            --replace "./vagrant" "${src}/vagrant"
+    substituteInPlace $out/ssh-vm.sh \
+    --replace "./vagrant" "${src}/vagrant"
 
-            install \
-            -m0755 \
-            $out/ssh-vm.sh \
-            -D \
-            $out/bin/ssh-vm
+    install \
+    -m0755 \
+    $out/ssh-vm.sh \
+    -D \
+    $out/bin/ssh-vm
 
-            patchShebangs $out/bin/ssh-vm
+    patchShebangs $out/bin/ssh-vm
 
-            wrapProgram $out/bin/ssh-vm \
-              --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
-          '';
+    wrapProgram $out/bin/ssh-vm \
+      --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
+  '';
 
-        }
+}

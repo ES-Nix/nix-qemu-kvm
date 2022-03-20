@@ -1,33 +1,33 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> { } }:
 pkgs.stdenv.mkDerivation rec {
-          name = "reset-to-backup";
-          buildInputs = with pkgs; [ stdenv ];
-          nativeBuildInputs = with pkgs; [ makeWrapper ];
-          propagatedNativeBuildInputs = with pkgs; [
-            bash
-            coreutils
-          ];
+  name = "reset-to-backup";
+  buildInputs = with pkgs; [ stdenv ];
+  nativeBuildInputs = with pkgs; [ makeWrapper ];
+  propagatedNativeBuildInputs = with pkgs; [
+    bash
+    coreutils
+  ];
 
-          src = builtins.path { path = ./.; name = "reset-to-backup"; };
-          phases = [ "installPhase" ];
+  src = builtins.path { path = ./.; name = "reset-to-backup"; };
+  phases = [ "installPhase" ];
 
-          unpackPhase = ":";
+  unpackPhase = ":";
 
-          installPhase = ''
-            mkdir -p $out/bin
+  installPhase = ''
+    mkdir -p $out/bin
 
-            cp -r "${src}"/* $out
+    cp -r "${src}"/* $out
 
-            install \
-            -m0755 \
-            $out/reset-to-backup.sh \
-            -D \
-            $out/bin/reset-to-backup
+    install \
+    -m0755 \
+    $out/reset-to-backup.sh \
+    -D \
+    $out/bin/reset-to-backup
 
-            patchShebangs $out/bin/reset-to-backup
+    patchShebangs $out/bin/reset-to-backup
 
-            wrapProgram $out/bin/reset-to-backup \
-              --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
-          '';
+    wrapProgram $out/bin/reset-to-backup \
+      --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
+  '';
 
-        }
+}

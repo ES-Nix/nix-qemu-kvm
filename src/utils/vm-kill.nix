@@ -1,37 +1,37 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> { } }:
 pkgs.stdenv.mkDerivation rec {
-          name = "vm-kill";
-          buildInputs = with pkgs; [ stdenv ];
-          nativeBuildInputs = with pkgs; [ makeWrapper ];
-          propagatedNativeBuildInputs = with pkgs; [
-            bash
-            coreutils
+  name = "vm-kill";
+  buildInputs = with pkgs; [ stdenv ];
+  nativeBuildInputs = with pkgs; [ makeWrapper ];
+  propagatedNativeBuildInputs = with pkgs; [
+    bash
+    coreutils
 
-            procps
-            util-linux
-          ];
+    procps
+    util-linux
+  ];
 
-          src = builtins.path { path = ./.; name = "vm-kill"; };
-          phases = [ "installPhase" ];
+  src = builtins.path { path = ./.; name = "vm-kill"; };
+  phases = [ "installPhase" ];
 
-          unpackPhase = ":";
+  unpackPhase = ":";
 
-          installPhase = ''
-            mkdir -p $out/bin
+  installPhase = ''
+    mkdir -p $out/bin
 
-            cp -r "${src}"/* $out
-            ls -al $out/
+    cp -r "${src}"/* $out
+    ls -al $out/
 
-            install \
-            -m0755 \
-            $out/vm-kill.sh \
-            -D \
-            $out/bin/vm-kill
+    install \
+    -m0755 \
+    $out/vm-kill.sh \
+    -D \
+    $out/bin/vm-kill
 
-            patchShebangs $out/bin/vm-kill
+    patchShebangs $out/bin/vm-kill
 
-            wrapProgram $out/bin/vm-kill \
-              --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
-          '';
+    wrapProgram $out/bin/vm-kill \
+      --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
+  '';
 
-        }
+}

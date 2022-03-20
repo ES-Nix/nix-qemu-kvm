@@ -1,38 +1,38 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> { } }:
 pkgs.stdenv.mkDerivation rec {
-          name = "ubuntu-qemu-kvm";
-          buildInputs = with pkgs; [ stdenv ];
-          nativeBuildInputs = with pkgs; [ makeWrapper ];
-          propagatedNativeBuildInputs = with pkgs; [
-            bash
-            coreutils
+  name = "ubuntu-qemu-kvm";
+  buildInputs = with pkgs; [ stdenv ];
+  nativeBuildInputs = with pkgs; [ makeWrapper ];
+  propagatedNativeBuildInputs = with pkgs; [
+    bash
+    coreutils
 
-            (import ./vm-kill.nix { inherit pkgs;})
-            (import ./ssh-vm-starts-vm-if-not-running.nix { inherit pkgs; })
-          ];
+    (import ./vm-kill.nix { inherit pkgs; })
+    (import ./ssh-vm-starts-vm-if-not-running.nix { inherit pkgs; })
+  ];
 
-          src = builtins.path { path = ./.; name = "ubuntu-qemu-kvm"; };
-          phases = [ "installPhase" ];
+  src = builtins.path { path = ./.; name = "ubuntu-qemu-kvm"; };
+  phases = [ "installPhase" ];
 
-          unpackPhase = ":";
+  unpackPhase = ":";
 
-          installPhase = ''
-            mkdir -p $out/bin
+  installPhase = ''
+    mkdir -p $out/bin
 
-            cp -r "${src}"/* $out
+    cp -r "${src}"/* $out
 
-            # ls -al $out/
+    # ls -al $out/
 
-            install \
-            -m0755 \
-            $out/ubuntu-qemu-kvm.sh \
-            -D \
-            $out/bin/ubuntu-qemu-kvm
+    install \
+    -m0755 \
+    $out/ubuntu-qemu-kvm.sh \
+    -D \
+    $out/bin/ubuntu-qemu-kvm
 
-            patchShebangs $out/bin/ubuntu-qemu-kvm
+    patchShebangs $out/bin/ubuntu-qemu-kvm
 
-            wrapProgram $out/bin/ubuntu-qemu-kvm \
-              --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
-          '';
+    wrapProgram $out/bin/ubuntu-qemu-kvm \
+      --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
+  '';
 
-        }
+}

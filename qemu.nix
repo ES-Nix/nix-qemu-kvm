@@ -1,4 +1,4 @@
-{ pkgs ?  import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> { } }:
 let
   img_orig = "ubuntu-21.04-server-cloudimg-amd64.img";
   img_orig-20-04 = "ubuntu-20.04-server-cloudimg-amd64.img";
@@ -9,10 +9,10 @@ let
 in
 rec {
 
-#  image = pkgs.fetchurl {
-#    url = "https://cloud-images.ubuntu.com/releases/hirsute/release-20210817/${img_orig}";
-#    hash = "sha256-q6v8JQ0RIG93mHa42s/o2/u+y6Q2UKGWJiQCQnZA29M=";
-#  };
+  #  image = pkgs.fetchurl {
+  #    url = "https://cloud-images.ubuntu.com/releases/hirsute/release-20210817/${img_orig}";
+  #    hash = "sha256-q6v8JQ0RIG93mHa42s/o2/u+y6Q2UKGWJiQCQnZA29M=";
+  #  };
 
   image-20-04 = pkgs.fetchurl {
     url = "https://cloud-images.ubuntu.com/releases/focal/release-20201102/${img_orig}";
@@ -45,14 +45,14 @@ rec {
     };
     ssh_pwauth = true;
 
-#    users = {
-#        name = "user";
-#        passwd = "pwuser";
-#        lock_passwd = "false";
-#        groups = "usergroup";
-#        shell = "${toString "/bin/bash"}";
-#        sudo = "${toString "ALL=(ALL) NOPASSWD:ALL"}";
-#    };
+    #    users = {
+    #        name = "user";
+    #        passwd = "pwuser";
+    #        lock_passwd = "false";
+    #        groups = "usergroup";
+    #        shell = "${toString "/bin/bash"}";
+    #        sudo = "${toString "ALL=(ALL) NOPASSWD:ALL"}";
+    #    };
 
     # Source of magic number msize=262144
     # https://askubuntu.com/questions/548208/sharing-folder-with-vm-through-libvirt-9p-permission-denied/1259833#1259833
@@ -81,32 +81,32 @@ rec {
     '';
 
   runVM = pkgs.writeShellScript "runVM" ''
-    #
-    # Starts the VM with the given system image
-    #
-    set -euo pipefail
-    image=$1
-    userdata=$2
-    shift 2
+        #
+        # Starts the VM with the given system image
+        #
+        set -euo pipefail
+        image=$1
+        userdata=$2
+        shift 2
 
-    args=(
-      -drive "file=$image,format=qcow2"
-      -drive "file=$userdata,format=qcow2"
-      -enable-kvm
-      -m 18G
-      -nographic
-      -serial mon:stdio
-      -smp 4
-      -device "rtl8139,netdev=net0"
-      -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:22"
-      -cpu Haswell-noTSX-IBRS,vmx=on
-      -cpu host
-#      -fsdev local,security_model=passthrough,id=fsdev0,path="\$(pwd)"
-#      -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare
-    )
+        args=(
+          -drive "file=$image,format=qcow2"
+          -drive "file=$userdata,format=qcow2"
+          -enable-kvm
+          -m 18G
+          -nographic
+          -serial mon:stdio
+          -smp 4
+          -device "rtl8139,netdev=net0"
+          -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:22"
+          -cpu Haswell-noTSX-IBRS,vmx=on
+          -cpu host
+    #      -fsdev local,security_model=passthrough,id=fsdev0,path="\$(pwd)"
+    #      -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare
+        )
 
-    set -x
-    exec ${pkgs.qemu}/bin/qemu-system-x86_64 "''${args[@]}" "$@" >/dev/null 2>&1
+        set -x
+        exec ${pkgs.qemu}/bin/qemu-system-x86_64 "''${args[@]}" "$@" >/dev/null 2>&1
   '';
 
   runVML = pkgs.writeShellScript "runVML" ''

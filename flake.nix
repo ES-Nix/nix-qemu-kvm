@@ -55,16 +55,16 @@
         devShells.default = pkgs.mkShell {
 
           buildInputs = with pkgs; [
-          self.packages.${system}.vm-kill
-          self.packages.${system}.ssh-vm
-          self.packages.${system}.ssh-vm-starts-vm-if-not-running
-          self.packages.${system}.backup-current-state
-          self.packages.${system}.refresh
-          self.packages.${system}.reset-to-backup
-          self.packages.${system}.ubuntu-qemu-kvm
-          self.packages.${system}.ubuntu-qemu-kvm-with-volume
+            self.packages.${system}.vm-kill
+            self.packages.${system}.ssh-vm
+            self.packages.${system}.ssh-vm-starts-vm-if-not-running
+            self.packages.${system}.backup-current-state
+            self.packages.${system}.refresh
+            self.packages.${system}.reset-to-backup
+            self.packages.${system}.ubuntu-qemu-kvm
+            self.packages.${system}.ubuntu-qemu-kvm-with-volume
 
-#           self.packages.${system}.qemu.vm
+            #           self.packages.${system}.qemu.vm
 
             nixpkgs-fmt
             # shellcheck # ghc-8.10.6
@@ -79,20 +79,6 @@
             # find . -type f -iname '*.nix' -exec nixpkgs-fmt {} \;
           '';
         };
-
-#        devShell = import ./shell.nix { inherit pkgs; utils = [
-##          self.packages.${system}.vm-kill
-##          self.packages.${system}.ssh-vm
-##          self.packages.${system}.ssh-vm-starts-vm-if-not-running
-##          self.packages.${system}.backup-current-state
-##          self.packages.${system}.refresh
-##          self.packages.${system}.reset-to-backup
-##          self.packages.${system}.ubuntu-qemu-kvm
-##          self.packages.${system}.ubuntu-qemu-kvm-with-volume
-#
-#          # self.packages.${system}.qemu.vm
-#          ];
-#        };
 
         defaultApp = apps.ubuntu-qemu-kvm;
         apps.ubuntu-qemu-kvm = flake-utils.lib.mkApp {

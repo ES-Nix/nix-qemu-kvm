@@ -1,35 +1,35 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> { } }:
 pkgs.stdenv.mkDerivation rec {
-          name = "fix-volume-permission";
-          buildInputs = with pkgs; [ stdenv ];
-          nativeBuildInputs = with pkgs; [ makeWrapper ];
-          propagatedNativeBuildInputs = with pkgs; [
-            bash
-            coreutils
+  name = "fix-volume-permission";
+  buildInputs = with pkgs; [ stdenv ];
+  nativeBuildInputs = with pkgs; [ makeWrapper ];
+  propagatedNativeBuildInputs = with pkgs; [
+    bash
+    coreutils
 
-            findutils
-          ];
+    findutils
+  ];
 
-          src = builtins.path { path = ./.; name = "fix-volume-permission"; };
-          phases = [ "installPhase" ];
+  src = builtins.path { path = ./.; name = "fix-volume-permission"; };
+  phases = [ "installPhase" ];
 
-          unpackPhase = ":";
+  unpackPhase = ":";
 
-          installPhase = ''
-            mkdir -p $out/bin
+  installPhase = ''
+    mkdir -p $out/bin
 
-            cp -r "${src}"/* $out
+    cp -r "${src}"/* $out
 
-            install \
-            -m0755 \
-            $out/fix-volume-permission.sh \
-            -D \
-            $out/bin/fix-volume-permission
+    install \
+    -m0755 \
+    $out/fix-volume-permission.sh \
+    -D \
+    $out/bin/fix-volume-permission
 
-            patchShebangs $out/bin/fix-volume-permission
+    patchShebangs $out/bin/fix-volume-permission
 
-            wrapProgram $out/bin/fix-volume-permission \
-              --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
-          '';
+    wrapProgram $out/bin/fix-volume-permission \
+      --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
+  '';
 
-        }
+}

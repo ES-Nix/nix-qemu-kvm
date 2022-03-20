@@ -164,11 +164,11 @@ let
     result/resetToBackup
   '';
 
-   run-vm-kvm = writeShellScriptBin "run-vm-kvm" ''
+  run-vm-kvm = writeShellScriptBin "run-vm-kvm" ''
     (result/run-vm-kvm < /dev/null &)
   '';
 
-   installNix = writeShellScriptBin "install-nix" ''
+  installNix = writeShellScriptBin "install-nix" ''
 
     echo 'Started nix installer!'\
     && { ssh-vm << COMMANDS
@@ -185,7 +185,7 @@ let
 
   '';
 
-   vmsshpoweroff = writeShellScriptBin "vm-ssh-poweroff" ''
+  vmsshpoweroff = writeShellScriptBin "vm-ssh-poweroff" ''
 
     echo echo \
     && { ssh-vm << COMMANDS
@@ -298,17 +298,17 @@ mkShell {
     wget
 
     # VMKill
-#    backupCurrentState
-#    clean-all
-#    prepares-volume
-#    resetToBackup
-#    run-vm-kvm
-#    # ssh-vm
-#    ssh-vm-dev
-#    ssh-vm-volume-dev-test
-#    volumeMountHack
-#    installNix
-#    vmsshpoweroff
+    #    backupCurrentState
+    #    clean-all
+    #    prepares-volume
+    #    resetToBackup
+    #    run-vm-kvm
+    #    # ssh-vm
+    #    ssh-vm-dev
+    #    ssh-vm-volume-dev-test
+    #    volumeMountHack
+    #    installNix
+    #    vmsshpoweroff
 
   ]
   ++
