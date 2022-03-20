@@ -7,7 +7,7 @@
 set -euo pipefail
 image=$1
 userdata=$2
-shift 3
+shift 2
 
 echo $image
 echo $userdata
@@ -24,7 +24,7 @@ args=(
   -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:22"
   -cpu Haswell-noTSX-IBRS,vmx=on
   -cpu host
-  # -fsdev local,security_model=passthrough,id=fsdev0,path="\$(pwd)"
+  # -fsdev local,security_model=passthrough,id=fsdev0,path="$(pwd)"
   # -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare
 )
 

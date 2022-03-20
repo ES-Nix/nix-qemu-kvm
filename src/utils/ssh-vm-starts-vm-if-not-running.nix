@@ -33,6 +33,17 @@ pkgs.stdenv.mkDerivation rec {
 
             wrapProgram $out/bin/ssh-vm-starts-vm-if-not-running \
               --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
+
+            install \
+            -m0755 \
+            $out/ssh-vm-starts-vm-if-not-running-with-volume.sh \
+            -D \
+            $out/bin/ssh-vm-starts-vm-if-not-running-with-volume
+
+            patchShebangs $out/bin/ssh-vm-starts-vm-if-not-running-with-volume
+
+            wrapProgram $out/bin/ssh-vm-starts-vm-if-not-running-with-volume \
+              --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
           '';
 
         }

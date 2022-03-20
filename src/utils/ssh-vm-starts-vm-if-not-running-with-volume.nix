@@ -1,14 +1,19 @@
 { pkgs ? import <nixpkgs> {} }:
 pkgs.stdenv.mkDerivation rec {
-          name = "refresh";
+          name = "ssh-vm-starts-vm-if-not-running-with-volume";
           buildInputs = with pkgs; [ stdenv ];
           nativeBuildInputs = with pkgs; [ makeWrapper ];
           propagatedNativeBuildInputs = with pkgs; [
             bash
             coreutils
+
+            qemu
+
+            (import ./ssh-vm.nix { inherit pkgs; })
+            (import ./run-vm-kvm-with-volume.nix { inherit pkgs; })
           ];
 
-          src = builtins.path { path = ./.; name = "refresh"; };
+          src = builtins.path { path = ./.; name = "ssh-vm-starts-vm-if-not-running-with-volume"; };
           phases = [ "installPhase" ];
 
           unpackPhase = ":";
@@ -17,18 +22,18 @@ pkgs.stdenv.mkDerivation rec {
             mkdir -p $out/bin
 
             cp -r "${src}"/* $out
-            # ls -al $out/
 
             install \
             -m0755 \
-            $out/refresh.sh \
+            $out/ssh-vm-starts-vm-if-not-running-with-volume.sh \
             -D \
-            $out/bin/refresh
+            $out/bin/ssh-vm-starts-vm-if-not-running-with-volume
 
-            patchShebangs $out/bin/refresh
+            patchShebangs $out/bin/ssh-vm-starts-vm-if-not-running-with-volume
 
-            wrapProgram $out/bin/refresh \
+            wrapProgram $out/bin/ssh-vm-starts-vm-if-not-running-with-volume \
               --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
+
           '';
 
         }

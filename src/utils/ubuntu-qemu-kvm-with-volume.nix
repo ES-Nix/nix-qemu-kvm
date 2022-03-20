@@ -10,7 +10,7 @@ pkgs.stdenv.mkDerivation rec {
 
             (import ./vm-kill.nix { inherit pkgs;})
             (import ./backup-current-state.nix { inherit pkgs;})
-            (import ./ssh-vm-starts-vm-if-not-running.nix { inherit pkgs; })
+            (import ./ssh-vm-starts-vm-if-not-running-with-volume.nix { inherit pkgs; })
           ];
 
           src = builtins.path { path = ./.; name = "ubuntu-qemu-kvm-with-volume"; };
@@ -22,7 +22,6 @@ pkgs.stdenv.mkDerivation rec {
             mkdir -p $out/bin
 
             cp -r "${src}"/* $out
-            ls -al $out/
 
             install \
             -m0755 \

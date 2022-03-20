@@ -46,14 +46,14 @@ else
 fi
 
 
-ssh-vm-starts-vm-if-not-running < <(cat "${STORE_PATH_OF_SOURCE_SCRIPT}"/fix-volume-permission.sh)
+ssh-vm-starts-vm-if-not-running-with-volume < <(cat "${STORE_PATH_OF_SOURCE_SCRIPT}"/fix-volume-permission.sh)
 
 # The VM should be off at this point.
 if [ "${BACKUP}" ]; then
   backup-current-state
 fi
 
-ssh-vm-starts-vm-if-not-running
+ssh-vm-starts-vm-if-not-running-with-volume
 
 # It works, so, we could inject any thing after the ssh-vm
 # echo 'Foo'

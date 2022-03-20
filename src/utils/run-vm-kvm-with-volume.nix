@@ -1,11 +1,17 @@
 { pkgs ? import <nixpkgs> {} }:
 let
-  # This is the cloud-init config
+
   cloudInitWithVolume = {
     ssh_authorized_keys = [
       (builtins.readFile ./vagrant.pub)
     ];
     ssh_pwauth = true;
+
+    # Source of magic number msize=262144
+    # https://askubuntu.com/questions/548208/sharing-folder-with-vm-through-libvirt-9p-permission-denied/1259833#1259833
+    mounts = [
+      [ "hostshare" "/home/ubuntu/code" "9p" "defaults,trans=virtio,access=any,version=9p2000.L,cache=none,msize=262144,rw" ]
+    ];
   };
 
 #    users = {
@@ -24,21 +30,22 @@ let
 
 in
   pkgs.stdenv.mkDerivation rec {
-          name = "run-vm-kvm";
+          name = "run-vm-kvm-with-volume";
           buildInputs = with pkgs; [ stdenv ];
           nativeBuildInputs = with pkgs; [ makeWrapper ];
           propagatedNativeBuildInputs = with pkgs; [
             bash
-            coreutils
+            coreutils # We use pwd binary at run time
 
             cloud-utils
             yj
             qemu
-            (import ./runVM.nix { inherit pkgs;})
+
+            (import ./runVM-with-volume.nix { inherit pkgs;})
           ]
           ;
 
-          src = builtins.path { path = ./.; name = "run-vm-kvm"; };
+          src = builtins.path { path = ./.; name = "run-vm-kvm-with-volume"; };
           phases = [ "installPhase" ];
 
           unpackPhase = ":";
@@ -64,19 +71,19 @@ in
             cloud-localds userdata.raw cloud-init.yaml
             qemu-img convert -p -f raw userdata.raw -O qcow2 "$out"/userdata.qcow2
 
-            substituteInPlace $out/run-vm-kvm.sh \
+            substituteInPlace $out/run-vm-kvm-with-volume.sh \
               --replace ":-store-disk-name}" ":-$out/disk.qcow2}" \
               --replace ":-store-userdata-name}" ":-$out/userdata.qcow2}"
 
             install \
             -m0755 \
-            $out/run-vm-kvm.sh \
+            $out/run-vm-kvm-with-volume.sh \
             -D \
-            $out/bin/run-vm-kvm
+            $out/bin/run-vm-kvm-with-volume
 
-            patchShebangs $out/bin/run-vm-kvm
+            patchShebangs $out/bin/run-vm-kvm-with-volume
 
-            wrapProgram $out/bin/run-vm-kvm \
+            wrapProgram $out/bin/run-vm-kvm-with-volume \
               --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
           '';
 

@@ -1,14 +1,16 @@
 { pkgs ? import <nixpkgs> {} }:
 pkgs.stdenv.mkDerivation rec {
-          name = "refresh";
+          name = "backup-current-state";
           buildInputs = with pkgs; [ stdenv ];
           nativeBuildInputs = with pkgs; [ makeWrapper ];
           propagatedNativeBuildInputs = with pkgs; [
             bash
             coreutils
-          ];
 
-          src = builtins.path { path = ./.; name = "refresh"; };
+          ]
+          ;
+
+          src = builtins.path { path = ./.; name = "backup-current-state"; };
           phases = [ "installPhase" ];
 
           unpackPhase = ":";
@@ -17,17 +19,16 @@ pkgs.stdenv.mkDerivation rec {
             mkdir -p $out/bin
 
             cp -r "${src}"/* $out
-            # ls -al $out/
 
             install \
             -m0755 \
-            $out/refresh.sh \
+            $out/backup-current-state.sh \
             -D \
-            $out/bin/refresh
+            $out/bin/backup-current-state
 
-            patchShebangs $out/bin/refresh
+            patchShebangs $out/bin/backup-current-state
 
-            wrapProgram $out/bin/refresh \
+            wrapProgram $out/bin/backup-current-state \
               --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
           '';
 

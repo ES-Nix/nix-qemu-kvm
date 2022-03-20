@@ -62,7 +62,7 @@ fi
 # And finally boot qemu with a bunch of arguments
 args=(
   # Share the nix folder with the guest
-  # -virtfs "local,security_model=none,id=fsdev0,path=\$PWD,readonly=off,mount_tag=hostshare"
+  -virtfs "local,security_model=none,id=fsdev0,path=$(pwd),readonly=off,mount_tag=hostshare"
 )
 echo "Starting VM."
 echo "To login: ubuntu / ubuntu"
@@ -73,4 +73,11 @@ echo "Press enter in a few seconds"
 
 # ls -al
 
-runVM "${DISK_NAME}" "${USERDATA_NAME}" "${args[@]}" "$@"
+runVM-with-volume "${DISK_NAME}" "${USERDATA_NAME}" "${args[@]}" "$@"
+
+
+#search_for() {
+#  zcat /proc/config.gz | rg $1
+#}
+#
+#search_for CONFIG_NET_9P

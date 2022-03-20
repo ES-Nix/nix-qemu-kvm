@@ -27,6 +27,7 @@
 
         packages.runVM = import ./src/utils/runVM.nix { inherit pkgs; };
         packages.run-vm-kvm = import ./src/utils/run-vm-kvm.nix { inherit pkgs; };
+        packages.run-vm-kvm-with-volume = import ./src/utils/run-vm-kvm-with-volume.nix { inherit pkgs; };
         packages.fix-volume-permission = import ./src/utils/fix-volume-permission.nix { inherit pkgs; };
 
         #

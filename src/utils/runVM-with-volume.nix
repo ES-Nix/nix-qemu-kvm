@@ -1,6 +1,6 @@
 { pkgs ? import <nixpkgs> {} }:
 pkgs.stdenv.mkDerivation rec {
-          name = "runVM";
+          name = "runVM-with-volume";
           buildInputs = with pkgs; [ stdenv ];
           nativeBuildInputs = with pkgs; [ makeWrapper ];
           propagatedNativeBuildInputs = with pkgs; [
@@ -10,7 +10,7 @@ pkgs.stdenv.mkDerivation rec {
           ]
           ;
 
-          src = builtins.path { path = ./.; name = "runVM"; };
+          src = builtins.path { path = ./.; name = "runVM-with-volume"; };
           phases = [ "installPhase" ];
 
           unpackPhase = ":";
@@ -22,13 +22,13 @@ pkgs.stdenv.mkDerivation rec {
 
             install \
             -m0755 \
-            $out/runVM.sh \
+            $out/runVM-with-volume.sh \
             -D \
-            $out/bin/runVM
+            $out/bin/runVM-with-volume
 
-            patchShebangs $out/bin/runVM
+            patchShebangs $out/bin/runVM-with-volume
 
-            wrapProgram $out/bin/runVM \
+            wrapProgram $out/bin/runVM-with-volume \
               --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
           '';
 
