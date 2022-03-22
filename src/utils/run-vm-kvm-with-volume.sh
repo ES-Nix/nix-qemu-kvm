@@ -49,13 +49,17 @@ STORE_USERDATA_NAME=${STORE_USERDATA_NAME:-store-userdata-name}
 
 if [[ ! -f "${DISK_NAME}" ]]; then
   # Setup the VM configuration on boot
-  cp --reflink=auto "${STORE_DISK_NAME}" "${DISK_NAME}"
+  dd if="${STORE_DISK_NAME}" of="${DISK_NAME}" iflag=direct oflag=direct bs=4M conv=sparse
+  # cp --reflink=auto "${STORE_DISK_NAME}" "${DISK_NAME}"
   chmod +w "${DISK_NAME}"
 fi
 
 if [[ ! -f "${USERDATA_NAME}" ]]; then
   # Setup the VM configuration on boot
-  cp --reflink=auto "${STORE_USERDATA_NAME}" "${USERDATA_NAME}"
+  # Hunting a bug, maybe cp --reflink=auto is bring to me an not desired behavior.
+  # Even when all disks are removed, I still hit some sort of cached disk.
+  dd if="${STORE_USERDATA_NAME}" of="${USERDATA_NAME}" iflag=direct oflag=direct bs=4M conv=sparse
+  # cp --reflink=auto "${STORE_USERDATA_NAME}" "${USERDATA_NAME}"
   chmod +w "${USERDATA_NAME}"
 fi
 

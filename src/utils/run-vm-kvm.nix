@@ -1,7 +1,14 @@
 { pkgs ? import <nixpkgs> { } }:
 let
   # This is the cloud-init config
-  cloudInitWithVolume = {
+  #
+  # In the guest VM the file created is:
+  # sudo nano /etc/sudoers.d/90-cloud-init-users
+  #
+  # https://askubuntu.com/a/525681
+  # https://askubuntu.com/a/878705
+
+  cloudInit = {
     ssh_authorized_keys = [
       (builtins.readFile ./vagrant.pub)
     ];
@@ -60,7 +67,7 @@ pkgs.stdenv.mkDerivation rec {
 
     {
       echo '#cloud-config'
-      echo '${builtins.toJSON cloudInitWithVolume}' | yj -jy
+      echo '${builtins.toJSON cloudInit}' | yj -jy
     } > cloud-init.yaml
     cloud-localds userdata.raw cloud-init.yaml
     qemu-img convert -p -f raw userdata.raw -O qcow2 "$out"/userdata.qcow2

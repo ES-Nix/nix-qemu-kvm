@@ -2,4 +2,4 @@
 
 
 # Use uname -m ?
-kill -9 $(pidof qemu-system-x86_64)
+kill -9 $(pidof qemu-kvm)
