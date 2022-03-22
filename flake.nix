@@ -58,6 +58,7 @@
             self.packages.${system}.vm-kill
             self.packages.${system}.ssh-vm
             self.packages.${system}.ssh-vm-starts-vm-if-not-running
+            self.packages.${system}.ssh-vm-starts-vm-if-not-running-with-volume
             self.packages.${system}.backup-current-state
             self.packages.${system}.refresh
             self.packages.${system}.reset-to-backup

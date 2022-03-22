@@ -9,7 +9,6 @@ pkgs.stdenv.mkDerivation rec {
     qemu
 
     (import ./vm-kill.nix { inherit pkgs; })
-    (import ./run-vm-kvm-with-volume.nix { inherit pkgs; })
     (import ./backup-current-state.nix { inherit pkgs; })
     (import ./ssh-vm-starts-vm-if-not-running-with-volume.nix { inherit pkgs; })
   ];
