@@ -20,6 +20,7 @@
         # It should be groupped somehow
         packages.vm-kill = import ./src/utils/vm-kill.nix { inherit pkgs; };
         packages.ssh-vm-starts-vm-if-not-running = import ./src/utils/ssh-vm-starts-vm-if-not-running.nix { inherit pkgs; };
+        packages.ssh-vm-starts-vm-if-not-running-with-volume = import ./src/utils/ssh-vm-starts-vm-if-not-running-with-volume.nix { inherit pkgs; };
         packages.ssh-vm = import ./src/utils/ssh-vm.nix { inherit pkgs; };
         packages.backup-current-state = import ./src/utils/backup-current-state.nix { inherit pkgs; };
         packages.refresh = import ./src/utils/refresh.nix { inherit pkgs; };
