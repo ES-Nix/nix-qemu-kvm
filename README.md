@@ -2784,6 +2784,9 @@ ps -fp $(pidof qemu-system-x86_64) | tr ' ' '\n'
 
 tr '\0' '\n' < /proc/$(pidof qemu-system-x86_64)/cmdline
 tr '\0' '\n' < /proc/$(pidof qemu-system-x86_64)/environ
+
+
+# lsof | { head -1 ; rg disk.qcow2 ; } 
 ```
 From: https://stackoverflow.com/questions/821837/how-to-get-the-command-line-args-passed-to-a-running-process-on-unix-linux-syste
 

@@ -25,6 +25,7 @@
         packages.backup-current-state = import ./src/utils/backup-current-state.nix { inherit pkgs; };
         packages.refresh = import ./src/utils/refresh.nix { inherit pkgs; };
         packages.reset-to-backup = import ./src/utils/reset-to-backup.nix { inherit pkgs; };
+        packages.vm-clear-all-qcow2-and-img = import ./src/utils/vm-clear-all-qcow2-and-img.nix { inherit pkgs; };
 
         packages.runVM = import ./src/utils/runVM.nix { inherit pkgs; };
         packages.run-vm-kvm = import ./src/utils/run-vm-kvm.nix { inherit pkgs; };
@@ -61,6 +62,7 @@
             self.packages.${system}.backup-current-state
             self.packages.${system}.refresh
             self.packages.${system}.reset-to-backup
+            self.packages.${system}.vm-clear-all-qcow2-and-img
 
             self.packages.${system}.run-vm-kvm
             self.packages.${system}.run-vm-kvm-with-volume

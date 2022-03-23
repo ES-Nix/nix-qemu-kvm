@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> { }, vm-utils }:
+{ pkgs ? import <nixpkgs> { } }:
 pkgs.stdenv.mkDerivation rec {
   name = "vm-clear-all-qcow2-and-img";
   buildInputs = with pkgs; [ stdenv ];
@@ -6,11 +6,7 @@ pkgs.stdenv.mkDerivation rec {
   propagatedNativeBuildInputs = with pkgs; [
     bash
     coreutils
-
-  ]
-  ++
-  vm-utils
-  ;
+  ];
 
   src = builtins.path { path = ./.; name = "vm-clear-all-qcow2-and-img"; };
   phases = [ "installPhase" ];
