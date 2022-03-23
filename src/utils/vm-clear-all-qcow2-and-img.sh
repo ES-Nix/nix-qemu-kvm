@@ -30,7 +30,6 @@ done
 
 REMOVE_ALL_BACKUPS=${REMOVE_ALL_BACKUPS:-false}
 
-echo "${REMOVE_ALL_BACKUPS}"
 
 # It is not so robust, it relies in the way
 # the files are named.
