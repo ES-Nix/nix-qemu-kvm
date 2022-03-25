@@ -62,6 +62,10 @@ nix run --refresh github:ES-Nix/nix-qemu-kvm/dev#ubuntu-qemu-kvm-with-volume -- 
 ```
 
 ```bash
+nix run --refresh github:ES-Nix/nix-qemu-kvm/dev#ubuntu-qemu-kvm-with-volume-and-nix -- --backup 'true'
+```
+
+```bash
 nix run --refresh .#ubuntu-qemu-kvm-with-volume -- --backup 'true'
 ```
 
@@ -73,6 +77,16 @@ github:ES-Nix/nix-qemu-kvm/dev \
 --command \
 bash \
 -c "ubuntu-qemu-kvm-with-volume --backup 'true' && exec $(ps -ocomm= -q $$)"
+```
+
+```bash
+nix \
+develop \
+--refresh \
+github:ES-Nix/nix-qemu-kvm/dev \
+--command \
+bash \
+-c "ubuntu-qemu-kvm-with-volume-and-nix --backup 'true' && exec $(ps -ocomm= -q $$)"
 ```
 
 ```bash
