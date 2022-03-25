@@ -30,7 +30,9 @@
         packages.runVM = import ./src/utils/runVM.nix { inherit pkgs; };
         packages.run-vm-kvm = import ./src/utils/run-vm-kvm.nix { inherit pkgs; };
         packages.run-vm-kvm-with-volume = import ./src/utils/run-vm-kvm-with-volume.nix { inherit pkgs; };
+
         packages.fix-volume-permission = import ./src/utils/fix-volume-permission.nix { inherit pkgs; };
+        packages.install-nix = import ./src/utils/install-nix.nix { inherit pkgs; };
         #
 
         # packages.qemu = import ./qemu.nix {
@@ -46,10 +48,15 @@
         defaultPackage = self.packages.${system}.ubuntu-qemu-kvm;
 
         packages.ubuntu-qemu-kvm = import ./src/utils/ubuntu-qemu-kvm.nix { inherit pkgs; };
+        packages.ubuntu-qemu-kvm-with-nix = import ./src/utils/ubuntu-qemu-kvm-with-nix.nix { inherit pkgs; };
 
         packages.ubuntu-qemu-kvm-dev = import ./src/utils/ubuntu-qemu-kvm-dev.nix { inherit pkgs; };
 
         packages.ubuntu-qemu-kvm-with-volume = import ./src/utils/ubuntu-qemu-kvm-with-volume.nix {
+          inherit pkgs;
+        };
+
+        packages.ubuntu-qemu-kvm-with-volume-and-nix = import ./src/utils/ubuntu-qemu-kvm-with-volume-and-nix.nix {
           inherit pkgs;
         };
 
@@ -71,7 +78,9 @@
             self.packages.${system}.ssh-vm-starts-vm-if-not-running-with-volume
 
             self.packages.${system}.ubuntu-qemu-kvm
+            self.packages.${system}.ubuntu-qemu-kvm-with-nix
             self.packages.${system}.ubuntu-qemu-kvm-with-volume
+            self.packages.${system}.ubuntu-qemu-kvm-with-volume-and-nix
 
             # self.packages.${system}.qemu.vm
 
