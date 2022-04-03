@@ -11,5 +11,5 @@ test -d /nix || sudo mkdir -m 0755 /nix \
 && . "$HOME"/.nix-profile/etc/profile.d/nix.sh \
 && . ~/."$(ps -ocomm= -q $$)"rc \
 && export TMPDIR=/tmp \
-&& nix flake --version
+&& nix flake --version \
 && nix build nixpkgs#hello --no-link
