@@ -48,10 +48,15 @@ else
 fi
 
 
+# cat "${STORE_PATH_OF_SOURCE_SCRIPT}"/fix-volume-permission.sh
+# ssh-vm-starts-vm-if-not-running-with-volume
+# ssh-vm-starts-vm-if-not-running-with-volume
 ssh-vm-starts-vm-if-not-running-with-volume < <(cat "${STORE_PATH_OF_SOURCE_SCRIPT}"/fix-volume-permission.sh)
 
 # The VM should be off at this point.
-if [ "${BACKUP}" ]; then
+if ${BACKUP}; then
+  # For debug:
+  # echo "${BACKUP}"
   backup-current-state
 fi
 

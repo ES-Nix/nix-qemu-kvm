@@ -9,8 +9,8 @@ image=$1
 userdata=$2
 shift 2
 
-echo $image
-echo $userdata
+# echo $image
+# echo $userdata
 
 args=(
   -drive "file=$image,format=qcow2"

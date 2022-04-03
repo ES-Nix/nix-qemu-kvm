@@ -101,12 +101,9 @@ bash \
 
 
 ```bash
-# sudo chown -Rv ubuntu:ubuntu "${HOME}" 2> /dev/null
-# 
-# find "${HOME}" -not \( -path "${HOME}/code*" -prune \) -exec echo {} \;
+echo "$(id -un):123" | sudo chpasswd
 
-find "${HOME}" -not \( -path "${HOME}/code*" -prune \) -exec sudo chown -v ubuntu:ubuntu {} \;
-
+sudo sed -i 's/^[^#]*'"$(id -un)"' ALL=(ALL) NOPASSWD:ALL/# &/' /etc/sudoers.d/90-cloud-init-users
 ```
 
 ## Installing via git
