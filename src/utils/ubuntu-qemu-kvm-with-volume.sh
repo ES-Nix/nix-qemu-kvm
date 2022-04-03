@@ -37,10 +37,12 @@ vm-kill
 rm -fv disk.qcow2 userdata.qcow2
 
 
-if [ nix flake metadata .# 1> /dev/null 2> /dev/null ]; then
+if nix flake metadata .# 1> /dev/null 2> /dev/null; then
+
   nix build --refresh .#fix-volume-permission --no-link
   STORE_PATH_OF_SOURCE_SCRIPT="$(nix eval --raw --refresh .#fix-volume-permission)"
 else
+
   nix build --refresh github:ES-Nix/nix-qemu-kvm/dev#fix-volume-permission --no-link
   STORE_PATH_OF_SOURCE_SCRIPT="$(nix eval --raw --refresh github:ES-Nix/nix-qemu-kvm/dev#fix-volume-permission)"
 fi
