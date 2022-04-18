@@ -49,7 +49,6 @@ alpine.qcow2 \
 -cpu host \
 -smp $(nproc)
 ```
-rm alpine.qcow2
 
 
 Type `root` and press enter:
@@ -58,34 +57,15 @@ root
 ```
 
 ```bash
-setup-alpine
-```
-From: https://wiki.alpinelinux.org/wiki/Install_Alpine_in_Qemu
+# echo 'root:123' | chpasswd
 
-```bash
-pt
-pt-nativo
-cat 
-eth0
-dhcp
-n
-UTC
-none
-openssh
-sda
-data
-y
-none
-/var/cache/apk
-```
-
-```bash
-{ cat << EOF > answerfile
+export ERASE_DISKS=/dev/sda \
+&& { cat << EOF > answerfile
 # Customised example answer file for setup-alpine script
 # If you don't want to use a certain option, then comment it out
 
 # Use US layout with US variant
-KEYMAPOPTS="us us"
+KEYMAPOPTS="pt pt"
 
 # Set hostname to 
 HOSTNAMEOPTS="-n alpine-vm-qemu-machine"
@@ -109,7 +89,9 @@ TIMEZONEOPTS="-z UTC"
 PROXYOPTS="none"
 
 # Add a random mirror
-APKREPOSOPTS="-r"
+APKREPOSOPTS="-1"
+
+APKCACHEOPTS="/var/cache/apk"
 
 # Install Openssh
 SSHDOPTS="-c openssh"
@@ -118,11 +100,16 @@ SSHDOPTS="-c openssh"
 NTPOPTS="-c openntpd"
 
 # Use /dev/sda as a data disk
-DISKOPTS="-m data /dev/sda"
+DISKOPTS="-s 2048 -m sys /dev/sda"
 
 EOF
-} && setup-apkcache /var/cache/apk \
-&& setup-alpine -f answerfile
+} && setup-alpine -f answerfile \
+&& poweroff
+
+#setup-alpine -q
+#setup-keymap pt pt
+#setup-hostname -n alpine-test
+#/etc/init.d/hostname --quiet restart
 ```
 
 ```bash
@@ -132,11 +119,11 @@ qemu-kvm \
 -hda alpine.qcow2 \
 -nographic \
 -enable-kvm \
--cpu host \
 -smp $(nproc)
 ```
 
 ```bash
+apk update
 apk add --no-cache sudo
 
 adduser \
@@ -148,9 +135,49 @@ adduser \
 
 echo 'nixuser ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/nixuser
 
-passwd nixuser
+echo 'nixuser:123' | chpasswd
+reboot
+# passwd nixuser
 ```
 Adapted from: https://stackoverflow.com/a/54934781
+
+#### Manual installation 
+
+```bash
+setup-alpine
+```
+From: https://wiki.alpinelinux.org/wiki/Install_Alpine_in_Qemu
+
+```bash
+pt
+pt-nativo
+cat 
+eth0
+dhcp
+n
+UTC
+none
+openssh
+sda
+data
+y
+none
+/var/cache/apk
+```
+
+
+```bash
+qemu-kvm \
+-m 5000 \
+-enable-kvm \
+-nographic \
+-cdrom alpine-virt-3.14.2-x86_64.iso \
+-smp $(nproc)
+```
+
+
+
+###
 
 
 ```bash
@@ -163,43 +190,9 @@ xz \
 ca-certificates \
 openssl
 
-cat <<WRAP > "$HOME"/.profile
-# It was inserted by the get-nix installer
-flake () {
-    echo "Entering the nix + flake shell.";
-    # Would it be usefull to have the "" to pass arguments?
-    nix-shell -I nixpkgs=channel:nixos-21.05 --packages nixFlakes;
-}
-nd () {
-   nix-collect-garbage --delete-old;
-}
-develop () {
-    echo "Entering the nix + flake development shell.";
-    nix-shell -I nixpkgs=channel:nixos-21.05 --packages nixFlakes --run 'nix develop';
-}
-export TMPDIR=/tmp
-. "\$HOME"/.nix-profile/etc/profile.d/nix.sh
-# End of inserted by the get-nix installer
-WRAP
-
-test -d /nix || sudo mkdir --mode=0755 /nix \
-&& sudo chown "$USER": /nix \
-&& SHA256=eccef9a426fd8d7fa4c7e4a8c1191ba1cd00a4f7 \
-&& curl -fsSL https://raw.githubusercontent.com/ES-Nix/get-nix/"$SHA256"/get-nix.sh | sh \
-&& . "$HOME"/.nix-profile/etc/profile.d/nix.sh \
-&& . ~/.profile \
-&& export TMPDIR=/tmp \
-&& export OLD_NIX_PATH="$(readlink -f $(which nix))" \
-&& nix-shell -I nixpkgs=channel:nixos-21.05 --keep OLD_NIX_PATH --packages nixFlakes --run 'nix-env --uninstall $OLD_NIX_PATH && nix-collect-garbage --delete-old && nix profile install nixpkgs#nixFlakes' \
-&& sudo rm -frv /nix/store/*-nix-2.3.* \
-&& unset OLD_NIX_PATH \
-&& nix-collect-garbage --delete-old \
-&& nix store gc \
-&& nix flake --version
-
 
 sudo \
-apk \ 
+apk \
 remove \
 tar \
 xz \
@@ -207,35 +200,40 @@ ca-certificates \
 openssl
 ```
 
-export PATH="$HOME"/.nix-profile/bin:"$PATH"
-nix-shell -I nixpkgs=channel:nixos-21.05 --packages nixFlakes
 
-mkdir -m 7777 /home/nixuser/tmp
+
+```bash
+echo '. "$HOME"/.nix-profile/etc/profile.d/nix.sh' >> ~/.profile
+```
+
+
+mkdir -m 4777 /home/nixuser/tmp
 export TMPDIR="$HOME"/tmp
 
-echo 'nixuser:1000000:65536' >> /etc/subuid \
-&& echo 'nixgroup:1000000:65536' >> /etc/subgid
+
+```bash
+echo 'nixuser:1000000:65535' > /etc/subuid \
+&& echo 'nixuser:1000000:65535' > /etc/subgid
+```
 
 
-echo 'nixuser:100000:165535' > /etc/subuid \
-&& echo 'nixuser:100000:165535' > /etc/subgid
-
-export PATH="$HOME"/.nix-profile/bin:"$PATH"
-
-
+```bash
 podman --log-level=error run -it alpine >> logs.txt 2>&1
+```
 
 
-
+```bash
 podman \
 --log-level=error \
 run \
 --cgroup-manager=cgroupfs \
 --cgroups=disabled \
--it \
+--interactive=true \
+--tty=true \
 alpine
+```
 
-
+```bash
 nix build \
 github:ES-Nix/poetry2nix-examples/d55b1d471dd3a7dba878352df465a23e22f60101#poetry2nixOCIImage \
 --out-link \
@@ -250,6 +248,8 @@ run \
 --tty=true \
 localhost/numtild-dockertools-poetry2nix:0.0.1 \
 flask_minimal_example > logs.txt 2>&1
+```
+
 
 nix profile install nixpkgs#fuse-overlayfs
 
@@ -269,4 +269,52 @@ TODO:
 - https://stackoverflow.com/a/44581167
 - https://stackoverflow.com/questions/38024160/how-to-get-etc-profile-to-run-automatically-in-alpine-docker
 
+
+
+stat ~/.ssh 1> /dev/null 2> /dev/null || mkdir -p -m 0600 ~/.ssh
+
+nano ~/.ssh/id_rsa
+chmod 0600 ~/.ssh/id_rsa
+
+
+rc-update add cgroups
+rc-service cgroups start
+
+modprobe tun
+echo 'tun' >> /etc/modules
+echo 'nixuser:100000:65536' > /etc/subuid
+echo 'nixuser:100000:65536' > /etc/subgid
+
+
+sudo nano /etc/apk/repositories
+
+apk update && apk upgrade
+
+modprobe fuse
+
+
+nix \
+profile \
+install \
+--refresh \
+github:ES-Nix/podman-rootless/from-nixpkgs#podman
+
+podman run -it  alpine sh
+
+
+### The cloud-init
+
+
+https://cloud-init.io/
+
+https://gitlab.alpinelinux.org/alpine/aports/-/blob/master/community/cloud-init/README.Alpine
+
+
+> After the cloud-init package is installed you will need to run the
+> "setup-cloud-init" command to prepare the OS for cloud-init use.
+From: https://git.alpinelinux.org/aports/tree/community/cloud-init/README.Alpine
+
+
+TODO:
+- https://christine.website/blog/cloud-init-2021-06-04
 
