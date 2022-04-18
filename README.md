@@ -1683,7 +1683,10 @@ podman system service --time=0 unix://var/run/docker.sock &
 echo "$(which docker)"
 sudo rm -r /etc/sysconfig/docker
 
-May be related? https://github.com/moby/moby/issues/24886
+May be related? 
+- https://github.com/moby/moby/issues/24886
+- https://github.com/containers/podman/issues/13108
+
 
 #### Refs
 
@@ -4270,3 +4273,26 @@ systemctl status hello-world.service
 journalctl -u -e hello-world
 ```
 
+
+###
+
+
+wget https://cloud-images.ubuntu.com/minimal/releases/focal/release-20210130/ubuntu-20.04-minimal-cloudimg-amd64.img
+
+
+qemu-kvm \
+-enable-kvm \
+-cpu Haswell-noTSX-IBRS,vmx=on \
+-cpu host
+-m 1024 \
+-name u20 \
+-drive file=ubuntu-20.04-minimal-cloudimg-amd64.img,if=virtio \
+-fsdev local,security_model=passthrough,id=fsdev0,path=/tmp \
+-device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare
+
+
+
+### Installing proxmox in an virtualized disk using QEMU + KVM
+
+
+https://forum.proxmox.com/threads/install-proxmox-using-qemu.71284/#post-379953
