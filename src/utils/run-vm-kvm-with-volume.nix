@@ -25,7 +25,7 @@ let
 
   image = pkgs.fetchurl {
     url = "https://cloud-images.ubuntu.com/releases/18.04/release/ubuntu-18.04-server-cloudimg-amd64.img";
-    hash = "sha256-n0GUp7uRhi2XLm4bJ3GzBjvIG8FlT5QHjnGIIr4soq8=";
+    hash = "sha256-HXOfj7RqO9wlBBlRF4Up7x9fYOABalv9H6Uwko0gvAk=";
   };
 
 in
