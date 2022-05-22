@@ -7,6 +7,7 @@ pkgs.stdenv.mkDerivation rec {
     bash
     coreutils
 
+    procps # pidof
     qemu
 
     (import ./ssh-vm.nix { inherit pkgs; })
