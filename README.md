@@ -4279,7 +4279,7 @@ journalctl -u -e hello-world
 
 wget https://cloud-images.ubuntu.com/minimal/releases/focal/release-20210130/ubuntu-20.04-minimal-cloudimg-amd64.img
 
-
+```bash
 qemu-kvm \
 -enable-kvm \
 -cpu Haswell-noTSX-IBRS,vmx=on \
@@ -4289,10 +4289,72 @@ qemu-kvm \
 -drive file=ubuntu-20.04-minimal-cloudimg-amd64.img,if=virtio \
 -fsdev local,security_model=passthrough,id=fsdev0,path=/tmp \
 -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare
+```
 
 
+wget https://cloud-images.ubuntu.com/minimal/releases/jammy/release-20220506/ubuntu-22.04-minimal-cloudimg-amd64.img
+
+```bash
+qemu-kvm \
+-enable-kvm \
+-cpu Haswell-noTSX-IBRS,vmx=on \
+-cpu host
+-m 1024 \
+-name u20 \
+-drive file=ubuntu-22.04-minimal-cloudimg-amd64.img,if=virtio \
+-fsdev local,security_model=passthrough,id=fsdev0,path=/tmp \
+-device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare
+```
 
 ### Installing proxmox in an virtualized disk using QEMU + KVM
 
 
 https://forum.proxmox.com/threads/install-proxmox-using-qemu.71284/#post-379953
+
+#### The proxmox image
+
+
+
+TODO: use nixpkgs 22.05 release and test it again.
+
+Broken:
+```bash
+nix \
+--option sandbox false \
+build \
+--expr \
+'
+(
+  (
+    (
+      builtins.getFlake "github:NixOS/nixpkgs/b283b64580d1872333a99af2b4cef91bb84580cf"
+    ).lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [
+          "${toString (builtins.getFlake "github:NixOS/nixpkgs/b283b64580d1872333a99af2b4cef91bb84580cf")}/nixos/modules/virtualisation/proxmox-image.nix" 
+
+          "${toString (builtins.getFlake "github:NixOS/nixpkgs/b283b64580d1872333a99af2b4cef91bb84580cf")}/nixos/modules/installer/cd-dvd/channel.nix" 
+        ];
+    }
+  ).config.system.build
+)
+'
+```
+
+
+
+From:
+- https://github.com/NixOS/nixpkgs/blob/nixos-21.11/nixos/modules/virtualisation/proxmox-image.nix
+
+###
+
+Some copy/paste code only works in copy/paste and don't work when put in a script, and of course,
+the other way around, if the used code in a script is copy/pasted, it, in some cases does not work.  
+```bash
+nano script.sh \
+&& chmod +x script.sh \
+&& sudo su -c './script.sh'
+```
+
+
+
