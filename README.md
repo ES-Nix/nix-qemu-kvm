@@ -38,12 +38,18 @@ github:ES-Nix/nix-qemu-kvm/dba4650119c30f768069651ba375009290c51f83#ubuntu-qemu-
 
 
 ```bash
-nix run --refresh github:ES-Nix/nix-qemu-kvm/dev#ubuntu-qemu-kvm
+nix \
+run \
+--refresh \
+github:ES-Nix/nix-qemu-kvm/dev#ubuntu-qemu-kvm
 ```
 
 
 ```bash
-nix run --refresh .#ubuntu-qemu-kvm
+nix \
+run \
+--refresh \
+.#ubuntu-qemu-kvm
 ```
 
 
