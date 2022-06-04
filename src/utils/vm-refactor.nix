@@ -3,15 +3,24 @@ let
   img_orig = "ubuntu-21.04-server-cloudimg-amd64.img";
   img_orig-20-04 = "ubuntu-20.04-server-cloudimg-amd64.img";
 
+  major = "22";
+  minor = "04";
+  arc = "amd64";
+
+  majorDotMinor = "${major}.${minor}";
+  img_orig-22-04 = "ubuntu-${majorDotMinor}-server-cloudimg-${arc}.img";
+  ubuntu22-04 = "${majorDotMinor}/release/${img_orig-22-04}";
+
   # It is NOT working!
   user_name = "ubuntu";
   user_password = "b";
+
 in
 rec {
 
   image = pkgs.fetchurl {
-    url = "https://cloud-images.ubuntu.com/releases/18.04/release/ubuntu-18.04-server-cloudimg-amd64.img";
-    hash = "sha256-q5GxarsVUyFTDYymRerWe2iQpnjaPAhFavQMcusgqMo=";
+    url = "https://cloud-images.ubuntu.com/releases/${ubuntu22-04}";
+    hash = "sha256-rhhzp8kBsOkd4kx7TNzThHgP+iTpVdXnDmkKnToEYjY=";
   };
 
   config = {

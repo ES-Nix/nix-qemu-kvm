@@ -24,14 +24,23 @@ let
   #        sudo = "${toString "ALL=(ALL) NOPASSWD:ALL"}";
   #    };
 
-  image = pkgs.fetchurl {
-    url = "https://cloud-images.ubuntu.com/releases/18.04/release/ubuntu-18.04-server-cloudimg-amd64.img";
-    hash = "sha256-q5GxarsVUyFTDYymRerWe2iQpnjaPAhFavQMcusgqMo=";
-  };
+  major = "22";
+  minor = "04";
+  arc = "amd64";
+
+  majorDotMinor = "${major}.${minor}";
+  img_orig-22-04 = "ubuntu-${majorDotMinor}-server-cloudimg-${arc}.img";
+  ubuntu22-04 = "${majorDotMinor}/release/${img_orig-22-04}";
 
 in
 pkgs.stdenv.mkDerivation rec {
   name = "run-vm-kvm";
+
+  image = pkgs.fetchurl {
+    url = "https://cloud-images.ubuntu.com/releases/${ubuntu22-04}";
+    hash = "sha256-rhhzp8kBsOkd4kx7TNzThHgP+iTpVdXnDmkKnToEYjY=";
+  };
+
   buildInputs = with pkgs; [ stdenv ];
   nativeBuildInputs = with pkgs; [ makeWrapper ];
   propagatedNativeBuildInputs = with pkgs; [
@@ -58,7 +67,7 @@ pkgs.stdenv.mkDerivation rec {
 
     cp --reflink=auto "${image}" disk.qcow2
     chmod +w disk.qcow2
-    qemu-img resize disk.qcow2 +12G
+    qemu-img resize disk.qcow2 +18G
 
     mkdir -p $out/bin
 
