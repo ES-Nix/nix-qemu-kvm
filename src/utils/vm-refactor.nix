@@ -146,6 +146,8 @@ rec {
 
         set -x
 
+        # About this bash idiom:
+        # https://stackoverflow.com/questions/53253557/how-to-check-number-of-arguments-using-a-bash-script#comment93392625_53253648
         echo "\''${args[@]}"
 
         exec ${pkgs.qemu}/bin/qemu-system-x86_64 "''${args[@]}" "$@" >/dev/null 2>&1
