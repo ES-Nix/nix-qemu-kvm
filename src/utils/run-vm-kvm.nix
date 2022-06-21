@@ -38,7 +38,7 @@ pkgs.stdenv.mkDerivation rec {
 
   image = pkgs.fetchurl {
     url = "https://cloud-images.ubuntu.com/releases/${ubuntu22-04}";
-    hash = "sha256-rhhzp8kBsOkd4kx7TNzThHgP+iTpVdXnDmkKnToEYjY=";
+    hash = "sha256-i+VbayGwkyJF5RaftTLa4OD/PVQeKGbmHOEufDi+gxU=";
   };
 
   buildInputs = with pkgs; [ stdenv ];
