@@ -129,6 +129,11 @@
           drv = packages.ssh-vm-starts-vm-if-not-running;
         };
 
+        apps.ssh-vm = flake-utils.lib.mkApp {
+          name = "ssh-vm";
+          drv = packages.ssh-vm;
+        };
+
         apps.fix-volume-permission = flake-utils.lib.mkApp {
           name = "fix-volume-permission";
           drv = packages.fix-volume-permission;
