@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 
+# set -x
+
 vm-kill
 
 rm -fv disk.qcow2 userdata.qcow2
