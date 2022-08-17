@@ -20,7 +20,7 @@ args=(
   -drive "file=$image,format=qcow2"
   -drive "file=$userdata,format=qcow2"
   -enable-kvm
-  -m 10G
+  -m 5G
   -nographic
   -serial mon:stdio
   -smp 4
