@@ -20,7 +20,7 @@ rec {
 
   image = pkgs.fetchurl {
     url = "https://cloud-images.ubuntu.com/releases/${ubuntu22-04}";
-    hash = "sha256-hkgay529YuPpO0nrGaQMZsiqB/B+/xCvIN3zVaMX4p8=";
+    hash = "sha256-W6awmNLnssS1coEsHfWUMYd4C2SqpnOg/94yOtuoWUs=";
   };
 
   config = {
