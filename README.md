@@ -4243,7 +4243,10 @@ bash \
     && rm -rf /var/lib/apt/lists/*
 COMMANDS
                      
-
+# Ok, maybe a really hard, not yet seem, bug is hidden here!
+# Could it happend to when the podman diff is invoked 
+# NOT ALL stuff being done has finished?
+# Must it send a SIGSTOP (is it correct spelled?) before podman diff to make sure it can not race condition?  
                                                                                                                                             
 rm -f oci_diff.txt                                                                                                                                               
 podman diff "$CONTAINER" > oci_diff.txt                                                                                                                          
@@ -4363,4 +4366,89 @@ nano script.sh \
 ```
 
 
+### Vagrant
+
+
+
+```bash
+sudo groupadd docker; \
+sudo usermod --append --groups docker "$USER" \
+&& sudo reboot
+```
+
+```bash
+nix \
+profile \
+install \
+nixpkgs#docker \
+&& sudo cp "$(nix eval --raw nixpkgs#docker)"/etc/systemd/system/{docker.service,docker.socket} /etc/systemd/system/ \
+&& sudo systemctl enable --now docker
+```
+Refs.: 
+- https://github.com/NixOS/nixpkgs/issues/70407
+- https://github.com/moby/moby/tree/e9ab1d425638af916b84d6e0f7f87ef6fa6e6ca9/contrib/init/systemd
+
+
+
+```bash
+echo 'Start cgroup v2 instalation...' \
+&& sudo mkdir -p /etc/systemd/system/user@.service.d \
+&& sudo sh -c "echo '[Service]' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo sh -c "echo 'Delegate=yes' >> /etc/systemd/system/user@.service.d/delegate.conf" \
+&& sudo \
+sed \
+--in-place \
+'s/^GRUB_CMDLINE_LINUX="/&cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all/' \
+/etc/default/grub \
+&& sudo grub-mkconfig -o /boot/grub/grub.cfg \
+&& echo 'End cgroup v2 instalation...' \
+&& sudo reboot
+```
+
+```bash
+sudo kind delete cluster
+```
+
+
+https://kind.sigs.k8s.io/docs/user/rootless/#creating-a-kind-cluster-with-rootless-podman
+
+```bash
+nix \
+profile \
+install \
+github:ES-Nix/podman-rootless/from-nixpkgs#podman
+```
+
+
+```bash
+nix profile install nixpkgs#kind nixpkgs#kubectl
+time kind create cluster
+```
+
+
+```bash
+kubectl cluster-info --context kind-kind
+kubectl get pods -A
+```
+
+
+```bash
+kubectl apply -f https://k8s.io/examples/application/shell-demo.yaml
+
+kubectl get pod shell-demo
+
+kubectl exec --stdin --tty shell-demo -- /bin/bash -c 'ls -al /'
+
+kubectl delete pod shell-demo
+```
+
+
+
+
+```bash
+k0sctl install controller --single
+k0sctl init > k0sctl.yaml
+test -f "${HOME}"/.ssh/id_rsa || ssh-keygen -t rsa -C "$(git config user.email)" -f "${HOME}"/.ssh/id_rsa -N ''
+k0sctl apply --config k0sctl.yaml
+```
 
