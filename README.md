@@ -3549,13 +3549,7 @@ nixpkgs#cni \
 nixpkgs#cni-plugins \
 nixpkgs#kind \
 nixpkgs#kubectl \
-github:ES-Nix/podman-rootless/from-nixpkgs \
-&& nix \
-develop \
-github:ES-Nix/podman-rootless/from-nixpkgs \
---command \
-podman \
---version \
+github:ES-Nix/podman-rootless/from-nixpkgs#podman \
 && echo \
 && echo 'Start cni stuff...' \
 && test -d /etc/containers || sudo mkdir -pv /etc/containers \
@@ -3578,7 +3572,7 @@ EOF
 && echo 'End cni stuff...'
 
 echo 'Start bypass sudo podman stuff...' \
-&& PODMAN_NIX_PATH="$(nix eval --raw github:ES-Nix/podman-rootless/from-nixpkgs)/bin" \
+&& PODMAN_NIX_PATH="$(nix eval --raw github:ES-Nix/podman-rootless/from-nixpkgs#podman)/bin" \
 && KIND_NIX_PATH="$(nix eval --raw nixpkgs#kind)/bin" \
 && KUBECTL_NIX_PATH="$(nix eval --raw nixpkgs#kubectl)/bin" \
 && echo 'Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:'"$PODMAN_NIX_PATH":"$KIND_NIX_PATH":"$KUBECTL_NIX_PATH" | sudo tee -a /etc/sudoers.d/"$USER" \
