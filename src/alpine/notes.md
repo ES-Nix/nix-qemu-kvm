@@ -333,6 +333,10 @@ echo '0271b50b0cc3b1c50cb2e610aa7cfce1180596dc1cad96cc17c95007d3746dbc  vmlinuz-
 ```
 
 ```bash
+nix profile install nixpkgs#qemu
+```
+
+```bash
 qemu-img create -f qcow2 alpine-img.qcow2 10G
 ```
 
@@ -366,6 +370,7 @@ setup-alpine -c answerfile
 
 
 ```bash
+# fdisk -l /dev/vda
 export ERASE_DISKS=/dev/vda \
 && { cat << EOF > answerfile
 # Example answer file for setup-alpine script
@@ -465,6 +470,341 @@ reboot
 # passwd nixuser
 ```
 Adapted from: https://stackoverflow.com/a/54934781
+
+
+```bash
+nix build nixpkgs#pkgsCross.aarch64-multiplatform-musl.OVMF.fd
+FULL_PATH_FOR_QEMU_EFI="$(nix eval --raw nixpkgs#pkgsCross.aarch64-multiplatform-musl.OVMF.fd)"/AAVMF/QEMU_EFI-pflash.raw
+```
+
+
+```bash
+rm -fv alpine.qcow2
+
+qemu-img create -f qcow2 alpine.qcow2 10G
+```
+
+```bash
+qemu-system-aarch64 \
+-nic user \
+-boot d \
+-machine virt \
+-cpu cortex-a57 \
+-drive if=pflash,format=raw,readonly=on,file="${FULL_PATH_FOR_QEMU_EFI}" \
+-m 2048M \
+-nographic \
+-drive format=raw,readonly=on,file=alpine-standard-3.16.2-aarch64.iso \
+-drive file=alpine.qcow2 \
+-smp $(nproc)
+```
+
+
+```bash
+setup-alpine -c answerfile
+```
+
+
+```bash
+setup-alpine -q
+```
+
+
+```bash
+# fdisk -l /dev/vda
+
+export ERASE_DISKS=/dev/vda \
+&& { cat << EOF > answerfile
+# Customised example answer file for setup-alpine script
+# If you don't want to use a certain option, then comment it out
+
+# Use US layout with US variant
+KEYMAPOPTS="pt pt"
+
+# Set hostname to 
+HOSTNAMEOPTS="-n alpine-vm-qemu-machine"
+
+# Contents of /etc/network/interfaces
+INTERFACESOPTS="auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+    hostname alpine-vm-qemu-machine
+"
+
+# Search domain of example.com, Google public nameserver
+DNSOPTS="-d example.com 8.8.8.8"
+
+# Set timezone to UTC
+TIMEZONEOPTS="-z UTC"
+
+# set http/ftp proxy
+PROXYOPTS="none"
+
+# Add a random mirror
+APKREPOSOPTS="-1"
+
+APKCACHEOPTS="/var/cache/apk"
+
+# Install Openssh
+SSHDOPTS="-c openssh"
+
+# Use openntpd
+NTPOPTS="-c openntpd"
+
+# Use /dev/sda as a data disk
+DISKOPTS="-s 2048 -m sys /dev/vda"
+
+EOF
+} && setup-alpine -f answerfile \
+&& poweroff
+```
+
+
+
+```bash
+apk add curl xz
+```
+
+
+```bash
+qemu-system-aarch64 \
+-machine virt \
+-cpu cortex-a57 \
+-drive if=pflash,format=raw,readonly=on,file="${FULL_PATH_FOR_QEMU_EFI}" \
+-m 2048M \
+-nographic \
+-drive file=alpine.qcow2 \
+-smp $(nproc)
+```
+
+
+```bash
+. ~/.nix-profile/etc/profile.d/nix.sh 
+```
+
+### NixOS ARM in non-NixOS GNU/linux systems emulated using QEMU + KVM   
+
+
+
+https://discourse.nixos.org/t/failing-to-use-nixos-on-arm-by-compiling-through-qemu/7844
+
+
+```bash
+echo 'Start kvm stuff...' \
+&& getent group kvm || sudo groupadd kvm \
+&& sudo usermod --append --groups kvm "$USER" \
+&& sudo chown "$USER": /dev/kvm \
+&& echo 'End kvm stuff!'
+```
+
+##### Install nix
+
+https://github.com/ES-Nix/get-nix/tree/draft-in-wip#single-user
+
+
+
+```bash
+mkdir -pv ~/test-qemu-arm \
+&& cd ~/test-qemu-arm
+```
+
+
+```bash
+echo 'Started!' \
+&& { cat << 'EOF' > qemu.nix
+{ config, pkgs, lib, ... }:
+
+let
+  cfg = config.qemu-user;
+  arm = {
+    interpreter = "${pkgs.qemu-user-arm}/bin/qemu-arm";
+    magicOrExtension = ''\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00'';
+    mask = ''\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\x00\xff\xfe\xff\xff\xff'';
+  };
+  aarch64 = {
+    interpreter = "${pkgs.qemu-user-arm64}/bin/qemu-aarch64";
+    magicOrExtension = ''\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00'';
+    mask = ''\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\x00\xff\xfe\xff\xff\xff'';
+  };
+  riscv64 = {
+    interpreter = "${pkgs.qemu-riscv64}/bin/qemu-riscv64";
+    magicOrExtension = ''\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xf3\x00'';
+    mask = ''\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\x00\xff\xfe\xff\xff\xff'';
+  };
+in with lib; {
+  options = {
+    qemu-user = {
+      arm = mkEnableOption "enable 32bit arm emulation";
+      aarch64 = mkEnableOption "enable 64bit arm emulation";
+      riscv64 = mkEnableOption "enable 64bit riscv emulation";
+    };
+    nix.supportedPlatforms = mkOption {
+      type = types.listOf types.str;
+      description = "extra platforms that nix will run binaries for";
+      default = [];
+    };
+  };
+  config = mkIf (cfg.arm || cfg.aarch64) {
+    boot.binfmt.registrations =
+      optionalAttrs cfg.arm { inherit arm; } //
+      optionalAttrs cfg.aarch64 { inherit aarch64; } //
+      optionalAttrs cfg.riscv64 { inherit riscv64; };
+    nix.supportedPlatforms = (optionals cfg.arm [ "armv6l-linux" "armv7l-linux" ])
+      ++ (optional cfg.aarch64 "aarch64-linux");
+    nix.extraOptions = ''
+      extra-platforms = ${toString config.nix.supportedPlatforms} i686-linux
+    '';
+    nix.sandboxPaths = [ "/run/binfmt" ] ++ (optional cfg.arm "${pkgs.qemu-user-arm}") ++ (optional cfg.aarch64 "${pkgs.qemu-user-arm64}");
+  };
+}
+EOF
+} && echo
+```
+
+```bash
+echo 'Started!' \
+&& { cat << 'EOF' > qemu-wrap.c
+
+
+EOF
+} && echo
+```
+
+
+```bash
+echo 'Started!' \
+&& { cat << 'EOF' > qemu-stack.patch
+--- a/linux-user/elfload.c	2016-09-02 12:34:22.000000000 -0300
++++ b/linux-user/elfload.c	2017-07-09 18:44:22.420244038 -0300
+@@ -1419,7 +1419,7 @@
+  * dependent on stack size, but guarantee at least 32 pages for
+  * backwards compatibility.
+  */
+-#define STACK_LOWER_LIMIT (32 * TARGET_PAGE_SIZE)
++#define STACK_LOWER_LIMIT (128 * TARGET_PAGE_SIZE)
+ 
+ static abi_ulong setup_arg_pages(struct linux_binprm *bprm,
+                                  struct image_info *info)
+EOF
+} && echo
+```
+
+
+```bash
+echo 'Started!' \
+&& { cat << 'EOF' > default.nix
+{ stdenv, fetchurl, python, pkgconfig, zlib, glib, user_arch, flex, bison,
+makeStaticLibraries, glibc, qemu, fetchFromGitHub }:
+
+let
+  env2 = makeStaticLibraries stdenv;
+  myglib = (glib.override { stdenv = env2; }).overrideAttrs (drv: {
+    mesonFlags = (drv.mesonFlags or []) ++ [ "-Ddefault_library=both" ];
+  });
+  riscv_src = fetchFromGitHub {
+    owner = "riscv";
+    repo = "riscv-qemu";
+    rev = "7d2d2add16aff0304ab0c279152548dbd04a2138"; # riscv-all
+    sha256 = "16an7ifi2ifzqnlz0218rmbxq9vid434j98g14141qvlcl7gzsy2";
+  };
+  is_riscv = (user_arch == "riscv32") || (user_arch == "riscv64");
+  arch_map = {
+    arm = "i386";
+    aarch64 = "x86_64";
+    riscv64 = "x86_64";
+    x86_64 = "x86_64";
+  };
+in
+stdenv.mkDerivation rec {
+  name = "qemu-user-${user_arch}-${version}";
+  version = "3.1.0";
+  src = if is_riscv then riscv_src else qemu.src;
+  buildInputs = [ python pkgconfig zlib.static myglib flex bison glibc.static ];
+  patches = [ ./qemu-stack.patch ];
+  configureFlags = [
+    "--enable-linux-user" "--target-list=${user_arch}-linux-user"
+    "--disable-bsd-user" "--disable-system" "--disable-vnc"
+    "--disable-curses" "--disable-sdl" "--disable-vde"
+    "--disable-bluez" "--disable-kvm"
+    "--static"
+    "--disable-tools"
+    "--cpu=${arch_map.${user_arch}}"
+  ];
+  NIX_LDFLAGS = [ "-lglib-2.0" ];
+  enableParallelBuilding = true;
+  postInstall = ''
+    cc -static ${./qemu-wrap.c} -D QEMU_ARM_BIN="\"qemu-${user_arch}"\" -o $out/bin/qemu-wrap
+  '';
+}
+EOF
+} && echo
+```
+
+
+```bash
+echo 'Started!' \
+&& { cat << 'EOF' > vm-config.nix
+let
+  qemuOverlay = (import ./overlays/qemu);
+in
+{
+  imports = [
+    ./qemu.nix
+  ];
+
+  config = {
+    boot.kernelModules = [ "kvm-intel" ];
+
+    qemu-user.aarch64 = true;
+    boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+
+    nix = {
+      trustedUsers = [ "573" "builder" ];
+    };
+
+    users.users.builder = {
+      createHome = true;
+      isNormalUser = true;
+    };
+  };
+}
+EOF
+} && echo
+```
+
+
+```bash
+echo 'Started!' \
+&& { cat << 'EOF' > vm.nix
+{ config, lib, pkgs, ... }:
+
+with lib;
+
+{
+  imports =
+    [ <nixpkgs/nixos/modules/installer/cd-dvd/channel.nix>
+      ./vm-config.nix
+    ];
+
+  system.build.qemuvmImage = import <nixpkgs/nixos/lib/make-disk-image.nix> {
+    inherit lib config;
+    pkgs = import <nixpkgs/nixos> { inherit (pkgs) system; }; # ensure we use the regular qemu-kvm package
+    diskSize = 8192;
+    format = "qcow2";
+    configFile = pkgs.writeText "configuration.nix"
+      ''
+        {
+          imports = [ <./machine-config.nix> ];
+        }
+      '';
+    };
+}
+EOF
+} && echo
+```
+
+
 
 
 ### The cloud-init
