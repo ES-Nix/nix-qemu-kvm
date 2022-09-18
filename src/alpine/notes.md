@@ -452,24 +452,8 @@ qemu-system-aarch64 \
 -smp $(nproc)
 ```
 
-```bash
-apk update
-apk add --no-cache sudo
 
-adduser \
--D \
--G wheel \
--s /bin/sh \
--h /home/nixuser \
--g "User" nixuser
-
-echo 'nixuser ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/nixuser
-
-echo 'nixuser:123' | chpasswd
-reboot
-# passwd nixuser
-```
-Adapted from: https://stackoverflow.com/a/54934781
+#### The magic QEMU_EFI-pflash.raw
 
 
 ```bash
@@ -500,6 +484,183 @@ qemu-system-aarch64 \
 
 
 ```bash
+nix build nixpkgs#pkgsCross.aarch64-multiplatform-musl.OVMF.fd --no-link \
+&& FULL_PATH_FOR_QEMU_EFI="$(nix eval --raw nixpkgs#pkgsCross.aarch64-multiplatform-musl.OVMF.fd)"/AAVMF/QEMU_EFI-pflash.raw \
+&& rm -fv alpine.qcow2 \
+&& qemu-img create -f qcow2 alpine.qcow2 10G \
+&& qemu-system-aarch64 \
+-nic user \
+-boot d \
+-machine virt \
+-cpu cortex-a57 \
+-drive if=pflash,format=raw,readonly=on,file="${FULL_PATH_FOR_QEMU_EFI}" \
+-m 2048M \
+-nographic \
+-drive format=raw,readonly=on,file=alpine-standard-3.16.2-aarch64.iso \
+-drive file=alpine.qcow2 \
+-smp $(nproc)
+```
+
+
+```bash
+setup-alpine
+```
+
+
+```bash
+localhost:~# setup-alpine
+Enter system hostname (fully qualified form, e.g. 'foo.example.org') [localhost] 
+Available interfaces are: eth0.
+Enter '?' for help on bridges, bonding and vlans.
+Which one do you want to initialize? (or '?' or 'done') [eth0] 
+Ip address for eth0? (or 'dhcp', 'none', '?') [dhcp] 
+Do you want to do any manual network configuration? (y/n) [n] 
+udhcpc: started, v1.35.0
+udhcpc: broadcasting discover
+udhcpc: broadcasting select for 10.0.2.15, server 10.0.2.2
+udhcpc: lease of 10.0.2.15 obtained from 10.0.2.2, lease time 86400
+Changing password for root
+New password: 
+Bad password: too short
+Retype password: 
+passwd: password for root changed by root
+Which timezone are you in? ('?' for list) [UTC] 
+ * WARNING: clock skew detected!
+ * Saving 256 bits of non-creditable seed for next boot
+ * WARNING: clock skew detected!
+ * Starting busybox acpid ...
+ [ ok ]
+ * Starting busybox crond ...
+ [ ok ]
+HTTP/FTP proxy URL? (e.g. 'http://proxy:8080', or 'none') [none] 
+Which NTP client to run? ('busybox', 'openntpd', 'chrony' or 'none') [chrony] 
+ * service chronyd added to runlevel default
+ * Starting chronyd ...
+ [ ok ]
+
+Available mirrors:
+1) dl-cdn.alpinelinux.org
+2) uk.alpinelinux.org
+3) mirror.yandex.ru
+4) mirrors.gigenet.com
+5) mirror1.hs-esslingen.de
+6) mirror.leaseweb.com
+7) mirror.fit.cvut.cz
+8) alpine.mirror.far.fi
+9) alpine.mirror.wearetriple.com
+10) mirror.clarkson.edu
+11) mirror.aarnet.edu.au
+12) mirrors.dotsrc.org
+13) ftp.halifax.rwth-aachen.de
+14) mirrors.tuna.tsinghua.edu.cn
+15) mirrors.ustc.edu.cn
+16) mirrors.nju.edu.cn
+17) mirror.lzu.edu.cn
+18) ftp.acc.umu.se
+19) mirror.xtom.com.hk
+20) mirror.csclub.uwaterloo.ca
+21) alpinelinux.mirror.iweb.com
+22) pkg.adfinis.com
+23) mirror.ps.kz
+24) mirror.rise.ph
+25) mirror.operationtulip.com
+26) mirrors.ircam.fr
+27) mirror.math.princeton.edu
+28) mirrors.sjtug.sjtu.edu.cn
+29) ftp.icm.edu.pl
+30) mirror.ungleich.ch
+31) mirrors.edge.kernel.org
+32) ap.edge.kernel.org
+33) eu.edge.kernel.org
+34) download.nus.edu.sg
+35) alpine.yourlabs.org
+36) mirror.pit.teraswitch.com
+37) mirror.reenigne.net
+38) quantum-mirror.hu
+39) tux.rainside.sk
+40) alpine.cs.nycu.edu.tw
+41) mirror.ihost.md
+42) mirror.ette.biz
+43) mirror.lagoon.nc
+44) alpinelinux.c3sl.ufpr.br
+45) foobar.turbo.net.id
+46) alpine.ccns.ncku.edu.tw
+47) mirror.dst.ca
+48) mirror.kumi.systems
+49) mirror.sabay.com.kh
+50) alpine.northrepo.ca
+51) alpine.bardia.tech
+52) mirrors.ocf.berkeley.edu
+53) mirrors.pardisco.co
+54) mirrors.aliyun.com
+55) mirror.alwyzon.net
+56) mirror1.ku.ac.th
+57) mirrors.bfsu.edu.cn
+58) ftpmirror2.infania.net
+59) repo.iut.ac.ir
+60) mirror.fcix.net
+61) alpine.sakamoto.pl
+62) mirror.2degrees.nz
+63) mirror.arvancloud.com
+64) mirror.0-1.cloud
+65) mirror.kku.ac.th
+66) mirror.uepg.br
+67) alpine.astra.in.ua
+68) mirrors.neusoft.edu.cn
+69) ftp.udx.icscoe.jp
+70) alpinelinux.mirror.garr.it
+71) mirrors.hostico.ro
+72) mirror.serverion.com
+73) alpinelinux.qontinuum.space
+74) alpine.kyberorg.fi
+
+r) Add random from the above list
+f) Detect and add fastest mirror from above list
+e) Edit /etc/apk/repositories with text editor
+
+Enter mirror number (1-74) or URL to add (or r/f/e/done) [1] 
+Added mirror dl-cdn.alpinelinux.org
+Updating repository indexes... done.
+Setup a user? (enter a lower-case loginname, or 'no') [no] 
+Which ssh server? ('openssh', 'dropbear' or 'none') [openssh] 
+Allow root ssh login? ('?' for help) [prohibit-password] 
+Enter ssh key or URL for root (or 'none') [none] 
+ * service sshd added to runlevel default
+ * Caching service dependencies ...
+ [ ok ]
+ssh-keygen: generating new host keys: RSA DSA ECDSA ED25519 
+ * Starting sshd ...
+ [ ok ]
+Available disks are:
+  vdb   (10.7 GB 0x1af4 )
+Which disk(s) would you like to use? (or '?' for help or 'none') [none] vdb
+The following disk is selected:
+  vdb   (10.7 GB 0x1af4 )
+How would you like to use it? ('sys', 'data', 'crypt', 'lvm' or '?' for help) [?] sys
+WARNING: The following disk(s) will be erased:
+  vdb   (10.7 GB 0x1af4 )
+WARNING: Erase the above disk(s) and continue? (y/n) [n] y
+Creating file systems...
+mkfs.fat 4.2 (2021-01-31)
+Installing system on /dev/vdb3:
+Installing for arm64-efi platform.
+Installation finished. No error reported.       
+100% ████████████████████████████████████████████==> initramfs: creating /boot/initramfs-lts
+Generating grub configuration file ...
+Found linux image: /boot/vmlinuz-lts
+Found initrd image: /boot/initramfs-lts
+Warning: os-prober will not be executed to detect other bootable partitions.
+Systems on them will not be added to the GRUB boot configuration.
+Check GRUB_DISABLE_OS_PROBER documentation entry.
+done
+
+Installation is complete. Please reboot.
+
+```
+
+
+
+```bash
 setup-alpine -c answerfile
 ```
 
@@ -521,7 +682,7 @@ export ERASE_DISKS=/dev/vda \
 KEYMAPOPTS="pt pt"
 
 # Set hostname to 
-HOSTNAMEOPTS="-n alpine-vm-qemu-machine"
+HOSTNAMEOPTS="-n alpine-aarch64"
 
 # Contents of /etc/network/interfaces
 INTERFACESOPTS="auto lo
@@ -563,11 +724,6 @@ EOF
 
 
 ```bash
-apk add curl xz
-```
-
-
-```bash
 qemu-system-aarch64 \
 -machine virt \
 -cpu cortex-a57 \
@@ -580,23 +736,86 @@ qemu-system-aarch64 \
 
 
 ```bash
+apk update
+apk add --no-cache sudo
+
+adduser \
+-D \
+-G wheel \
+-s /bin/sh \
+-h /home/nixuser \
+-g "User" nixuser
+
+echo 'nixuser ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/nixuser
+
+echo 'nixuser:123' | chpasswd
+reboot
+# passwd nixuser
+```
+Adapted from: https://stackoverflow.com/a/54934781
+
+
+
+```bash
+apk add alpine-sdk doas curl xz
+```
+From: https://wiki.alpinelinux.org/wiki/Include:Setup_your_system_and_account_for_building_packages
+
+
+```bash
+test -d /etc/doas.d || mkdir -p /etc/doas.d
+
+echo 'permit persist :wheel' >> /etc/doas.d/doas.conf
+```
+From: https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#Options
+
+```bash
+modprobe tun \
+&& echo tun >> /etc/modules \
+&& echo nixuser:100000:65536 > /etc/subuid \
+&& echo nixuser:100000:65536 > /etc/subgid \
+&& rc-update add cgroups \
+&& rc-service cgroups start
+```
+
+```bash
+reboot
+```
+
+
+
+```bash
 . ~/.nix-profile/etc/profile.d/nix.sh 
 ```
 
-### NixOS ARM in non-NixOS GNU/linux systems emulated using QEMU + KVM   
 
+
+
+```bash
+nix \
+profile \
+install \
+--refresh \
+github:ES-Nix/podman-rootless/from-nixpkgs#podman
+```
+
+
+
+Broken, did not work:
+```bash
+apk add doas-sudo-shim
+```
+https://news.ycombinator.com/item?id=29330394
+
+
+
+### NixOS ARM in non-NixOS GNU/linux systems emulated using QEMU + KVM   
 
 
 https://discourse.nixos.org/t/failing-to-use-nixos-on-arm-by-compiling-through-qemu/7844
 
 
-```bash
-echo 'Start kvm stuff...' \
-&& getent group kvm || sudo groupadd kvm \
-&& sudo usermod --append --groups kvm "$USER" \
-&& sudo chown "$USER": /dev/kvm \
-&& echo 'End kvm stuff!'
-```
+
 
 ##### Install nix
 
