@@ -456,6 +456,15 @@ qemu-system-aarch64 \
 #### The magic QEMU_EFI-pflash.raw
 
 
+
+```bash
+wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/aarch64/alpine-standard-3.16.2-aarch64.iso
+wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/aarch64/alpine-standard-3.16.2-aarch64.iso.sha256
+
+cat alpine-standard-3.16.2-aarch64.iso.sha256 | sha256sum -c
+```
+
+
 ```bash
 nix build nixpkgs#pkgsCross.aarch64-multiplatform-musl.OVMF.fd
 FULL_PATH_FOR_QEMU_EFI="$(nix eval --raw nixpkgs#pkgsCross.aarch64-multiplatform-musl.OVMF.fd)"/AAVMF/QEMU_EFI-pflash.raw
@@ -481,6 +490,8 @@ qemu-system-aarch64 \
 -drive file=alpine.qcow2 \
 -smp $(nproc)
 ```
+
+#### Oneliner
 
 
 ```bash
@@ -655,7 +666,6 @@ Check GRUB_DISABLE_OS_PROBER documentation entry.
 done
 
 Installation is complete. Please reboot.
-
 ```
 
 
@@ -755,11 +765,24 @@ reboot
 Adapted from: https://stackoverflow.com/a/54934781
 
 
+```bash
+adduser \
+-D \
+-s /bin/sh \
+-h /home/nixuser \
+-g "User" nixuser
+
+echo 'nixuser:123' | chpasswd
+```
+
 
 ```bash
 apk add alpine-sdk doas curl xz
 ```
-From: https://wiki.alpinelinux.org/wiki/Include:Setup_your_system_and_account_for_building_packages
+From:
+- https://wiki.alpinelinux.org/wiki/Include:Setup_your_system_and_account_for_building_packages
+- https://unix.stackexchange.com/questions/689678/automate-alpine-linux-installation#comment1320137_689678
+- https://wejn.org/2022/04/alpinelinux-unattended-install/
 
 
 ```bash
@@ -770,6 +793,7 @@ echo 'permit persist :wheel' >> /etc/doas.d/doas.conf
 From: https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#Options
 
 ```bash
+# Run as root
 modprobe tun \
 && echo tun >> /etc/modules \
 && echo nixuser:100000:65536 > /etc/subuid \
@@ -785,6 +809,7 @@ reboot
 
 
 ```bash
+cp .bashrc .profile
 . ~/.nix-profile/etc/profile.d/nix.sh 
 ```
 
