@@ -453,6 +453,50 @@ qemu-system-aarch64 \
 ```
 
 
+#### The magic nixpkgs#OVMF.fd
+
+
+```bash
+wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/x86_64/alpine-standard-3.16.2-x86_64.iso
+wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/x86_64/alpine-standard-3.16.2-x86_64.iso.sha256
+
+cat alpine-standard-3.16.2-x86_64.iso.sha256 | sha256sum -c
+```
+
+
+```bash
+nix build nixpkgs#OVMF.fd
+FULL_PATH_FOR_QEMU_EFI="$(nix eval --raw nixpkgs#OVMF.fd)"/OVMF/OVMF.fd
+```
+
+```bash
+nix build nixpkgs#qemu
+FULL_PATH_FOR_QEMU_SECURE-CODE_FD="$(nix eval --raw nixpkgs#qemu)"/share/qemu/edk2-x86_64-secure-code.fd
+```
+
+
+
+#### Oneliner
+
+
+```bash
+nix build nixpkgs#OVMF.fd --no-link \
+&& FULL_PATH_FOR_QEMU_EFI="$(nix eval --raw nixpkgs#OVMF.fd)"/AAVMF/QEMU_EFI-pflash.raw \
+&& rm -fv alpine.qcow2 \
+&& qemu-img create -f qcow2 alpine.qcow2 10G \
+&& qemu-system-aarch64 \
+-nic user \
+-boot d \
+-machine virt \
+-cpu cortex-a57 \
+-drive if=pflash,format=raw,readonly=on,file="${FULL_PATH_FOR_QEMU_EFI}" \
+-m 2048M \
+-nographic \
+-drive format=raw,readonly=on,file=alpine-standard-3.16.2-aarch64.iso \
+-drive file=alpine.qcow2 \
+-smp $(nproc)
+```
+
 #### The magic QEMU_EFI-pflash.raw
 
 
