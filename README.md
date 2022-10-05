@@ -662,13 +662,17 @@ wget https://github.com/rootless-containers/usernetes/releases/download/v2021070
 ```
 
 
+```bash
 grep "^$(whoami):" /etc/sub?id
+```
 
+
+```bash
 MODULE=fuse
 sudo modinfo "$MODULE" 1> /dev/null 2> /dev/null \
 && ! sudo modprobe -n --first-time "$MODULE" 2> /dev/null \
 && echo "Loaded" || modprobe "$MODULE"
-
+```
 Refs.:
 - https://stackoverflow.com/a/30311688
 
@@ -700,18 +704,21 @@ xt_tcpudp
 EOF
 ```
 
-
+```bash
 podman ps
+```
 
-
-
+```bash
 docker cp usernetes-node:/home/user/.config/usernetes/master/admin-localhost.kubeconfig docker.kubeconfig
 export KUBECONFIG=./docker.kubeconfig
 kubectl run -it --rm --image busybox foo
+```
 
+```bash
 kubectl get nodes -o wide
+```
 
-
+```bash
 docker \
 run \
 -td \
@@ -720,6 +727,7 @@ run \
 --privileged \
 ghcr.io/rootless-containers/usernetes \
 --cri=containerd
+```
 
 && getent group docker || sudo groupadd docker \
 
@@ -727,25 +735,31 @@ podman \
 stats \
 --cgroup-manager=systemd
 
-
+```bash
 sudo apt-get install -y systemd
 sudo apt-get update &&
 && sudo apt-get install -y dbus-user-session
+```
 
+```bash
 printenv DBUS_SESSION_BUS_ADDRESS
 env | rg DBUS_SESSION_BUS_ADDRESS
 systemctl --user status dbus.socket
+```
 
+```bash
 systemctl --user enable --now dbus.socket
+```
 
-
+```bash
 lsb_release --all
 uname --all
 
 systemd --version
+```
 https://github.com/rootless-containers/usernetes#requirements
 
-
+```bash
 podman \
 run \
 --cgroup-manager=cgroupfs \
@@ -784,8 +798,11 @@ docker.io/library/alpine:3.14.0 \
 sh \
 -c 'apk add --no-cache curl && echo PinP'
 COMMANDS
+```
 
 
+
+```bash
 podman \
 run \
 --cgroup-manager=cgroupfs \
@@ -803,8 +820,18 @@ run \
 --user=0 \
 --volume=/sys/fs/cgroup:/sys/fs/cgroup:rw \
 docker.nix-community.org/nixpkgs/nix-flakes
+```
 
 
+```bash
+  --qemu-commandline QEMU_COMMANDLINE
+                        Pass arguments directly to the QEMU emulator. Ex:
+                        --qemu-commandline='-display gtk,gl=on'
+                        --qemu-commandline env=DISPLAY=:0.1
+```
+From:
+- virt-install --help | rg DISPLAY -B3
+- virt-install --version == 4.0.0
 
 ###
 
