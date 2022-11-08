@@ -1,12 +1,13 @@
 
 
 
-### Alpine
+## Alpine
 
 - https://alpinelinux.org/downloads/
 - https://wiki.alpinelinux.org/wiki/Install_Alpine_in_Qemu
 - https://wiki.alpinelinux.org/wiki/Alpine_setup_scripts#setup-alpine
 
+#### Alpine 3.14.2 x86_64
 
 ```bash
 command -v qemu-img || nix profile install nixpkgs#qemu
@@ -14,30 +15,13 @@ command -v wget || nix profile install nixpkgs#wget
 
 rm -fv alpine.qcow2; qemu-img create -f qcow2 alpine.qcow2 10G
 
-wget https://dl-cdn.alpinelinux.org/alpine/v3.14/releases/x86_64/alpine-virt-3.14.2-x86_64.iso
+test -f alpine-virt-3.14.2-x86_64.iso \
+|| wget https://dl-cdn.alpinelinux.org/alpine/v3.14/releases/x86_64/alpine-virt-3.14.2-x86_64.iso
 ```
+
 
 ```bash
 qemu-kvm \
--m 512 \
--nic user \
--boot d \
--cdrom alpine-virt-3.14.2-x86_64.iso \
--hda alpine.qcow2 \
--nographic \
--enable-kvm \
--cpu host \
--smp $(nproc)
-```
-
-```bash
-rm -fv alpine.qcow2 \
-&& qemu-img \
-create \
--f qcow2 \
-alpine.qcow2 \
-8G \
-&& qemu-kvm \
 -m 512 \
 -nic user \
 -boot d \
@@ -56,9 +40,8 @@ root
 ```
 
 ```bash
-# echo 'root:123' | chpasswd
-
-export ERASE_DISKS=/dev/vdb \
+DISK_NAME=sda
+export ERASE_DISKS=/dev/$DISK_NAME \
 && { cat << EOF > answerfile
 # Customised example answer file for setup-alpine script
 # If you don't want to use a certain option, then comment it out
@@ -98,17 +81,12 @@ SSHDOPTS="-c openssh"
 # Use openntpd
 NTPOPTS="-c openntpd"
 
-# Use /dev/vdb as a data disk
-DISKOPTS="-s 2048 -m sys /dev/vdb"
+# Use /dev/$DISK_NAME as a data disk
+DISKOPTS="-s 2048 -m sys /dev/$DISK_NAME"
 
 EOF
 } && setup-alpine -f answerfile \
 && poweroff
-
-#setup-alpine -q
-#setup-keymap pt pt
-#setup-hostname -n alpine-test
-#/etc/init.d/hostname --quiet restart
 ```
 
 ```bash
@@ -135,15 +113,161 @@ adduser \
 echo 'nixuser ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/nixuser
 
 echo 'nixuser:123' | chpasswd
+
 reboot
-# passwd nixuser
 ```
 Adapted from: https://stackoverflow.com/a/54934781
 
 
+#### Alpine 3.16.2, qemu, kvm
 
 
-#### Manual installation 
+```bash
+command -v qemu-img || nix profile install nixpkgs#qemu
+command -v wget || nix profile install nixpkgs#wget
+
+rm -fv alpine.qcow2
+qemu-img create -f qcow2 alpine.qcow2 10G
+
+test -f alpine-virt-3.16.2-x86_64.iso \
+|| wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/x86_64/alpine-virt-3.16.2-x86_64.iso
+
+qemu-kvm \
+-m 512 \
+-nic user \
+-boot d \
+-cdrom alpine-virt-3.16.2-x86_64.iso \
+-hda alpine.qcow2 \
+-nographic \
+-enable-kvm \
+-cpu host \
+-smp $(nproc)
+```
+
+
+Type `root` and press enter:
+```bash
+root
+```
+
+> Note: It is different from the 3.14.2!
+```bash
+DISK_NAME=sda
+# fdisk -l /dev/$DISK_NAME
+export ERASE_DISKS=/dev/$DISK_NAME \
+&& { cat << EOF > answerfile
+# Example answer file for setup-alpine script
+# If you don't want to use a certain option, then comment it out
+
+# Use US layout with US variant
+KEYMAPOPTS="pt pt"
+
+# Set hostname to 
+HOSTNAMEOPTS="-n alpine-x8664"
+
+# Set device manager to mdev
+DEVDOPTS=mdev
+
+# Contents of /etc/network/interfaces
+INTERFACESOPTS="auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+    hostname alpine-test
+"
+
+# Search domain of example.com, Google public nameserver
+# DNSOPTS="-d example.com 8.8.8.8"
+
+# Set timezone to UTC
+TIMEZONEOPTS="-z UTC"
+# TIMEZONEOPTS=none
+
+# set http/ftp proxy
+#PROXYOPTS="http://webproxy:8080"
+PROXYOPTS=none
+
+# Add first mirror (CDN)
+APKREPOSOPTS="-1"
+
+# Create admin user
+USEROPTS="-a -u -g audio,video,netdev nixuser"
+#USERSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@example.com"
+#USERSSHKEY="https://example.com/juser.keys"
+
+# Install Openssh
+SSHDOPTS="-c openssh"
+#ROOTSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@example.com"
+#ROOTSSHKEY="https://example.com/juser.keys"
+
+# Use openntpd
+NTPOPTS="-c openntpd"
+
+# Use /dev/sdb as a sys disk
+DISKOPTS="-s 2048 -m sys /dev/$DISK_NAME"
+
+# Setup storage with label APKOVL for config storage
+#LBUOPTS="LABEL=APKOVL"
+LBUOPTS=none
+
+#APKCACHEOPTS="/media/LABEL=APKOVL/cache"
+APKCACHEOPTS="/var/cache/apk"
+
+DEFAULT_DISK="-m sys /mnt /dev/$DISK_NAME"
+EOF
+} && setup-alpine -f answerfile \
+&& poweroff
+```
+
+
+```bash
+qemu-kvm \
+-m 512 \
+-nic user \
+-hda alpine.qcow2 \
+-nographic \
+-enable-kvm \
+-smp $(nproc)
+```
+
+It must be possible to login as `root` or as `nixuser`.
+
+> It probably come from `USEROPTS="-a -u -g audio,video,netdev nixuser"`
+
+Run as root:
+```bash
+# If using USEROPTS it is not needed to create the user here
+#adduser \
+#-D \
+#-G wheel \
+#-s /bin/sh \
+#-h /home/nixuser \
+#-g "User" nixuser
+
+echo 'nixuser:123' | chpasswd
+
+apk add alpine-sdk doas curl xz
+
+test -d /etc/doas.d || mkdir -p /etc/doas.d
+echo 'permit persist :wheel' >> /etc/doas.d/doas.conf
+
+modprobe tun \
+&& echo tun >> /etc/modules \
+&& echo nixuser:100000:65536 > /etc/subuid \
+&& echo nixuser:100000:65536 > /etc/subgid \
+&& rc-update add cgroups \
+&& rc-service cgroups start \
+&& reboot
+```
+From:
+- https://wiki.alpinelinux.org/wiki/Include:Setup_your_system_and_account_for_building_packages
+- https://unix.stackexchange.com/questions/689678/automate-alpine-linux-installation#comment1320137_689678
+- https://wejn.org/2022/04/alpinelinux-unattended-install/
+- https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#Options
+
+
+### Manual installation (Incomplete)
 
 ```bash
 setup-alpine
@@ -219,7 +343,8 @@ alpine
 ```
 
 ```bash
-nix build \
+nix \
+build \
 github:ES-Nix/poetry2nix-examples/d55b1d471dd3a7dba878352df465a23e22f60101#poetry2nixOCIImage \
 --out-link \
 poetry2nixOCIImage.tar.gz
@@ -289,11 +414,10 @@ install \
 --refresh \
 github:ES-Nix/podman-rootless/from-nixpkgs#podman
 
-podman run -it  alpine sh
+podman run -it alpine sh
 
 
 #### alpine arch64 with qemu
-
 
 
 
@@ -474,20 +598,9 @@ echo 'nixuser ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/nixuser
 
 echo 'nixuser:123' | chpasswd
 reboot
-# passwd nixuser
 ```
 Adapted from: https://stackoverflow.com/a/54934781
 
-
-```bash
-adduser \
--D \
--s /bin/sh \
--h /home/nixuser \
--g "User" nixuser
-
-echo 'nixuser:123' | chpasswd
-```
 
 Run as root:
 ```bash
@@ -516,12 +629,13 @@ reboot
 ```
 
 
-#### The magic nixpkgs#OVMF.fd
+#### The magic nixpkgs#OVMF.fd, x86_64
 
 
 ```bash
-wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/x86_64/alpine-standard-3.16.2-x86_64.iso
-wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/x86_64/alpine-standard-3.16.2-x86_64.iso.sha256
+BASE_URL='https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/x86_64/'
+test -f alpine-standard-3.16.2-x86_64.iso || wget "${BASE_URL}"alpine-standard-3.16.2-x86_64.iso
+test -f alpine-standard-3.16.2-x86_64.iso.sha256 || wget "${BASE_URL}"alpine-standard-3.16.2-x86_64.iso.sha256
 
 cat alpine-standard-3.16.2-x86_64.iso.sha256 | sha256sum -c
 ```
@@ -565,15 +679,19 @@ nix build nixpkgs#OVMF.fd --no-link \
 
 
 ```bash
-wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/aarch64/alpine-standard-3.16.2-aarch64.iso
-wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/aarch64/alpine-standard-3.16.2-aarch64.iso.sha256
+test -f alpine-standard-3.16.2-aarch64.iso \
+|| wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/aarch64/alpine-standard-3.16.2-aarch64.iso
+test -f alpine-standard-3.16.2-aarch64.iso.sha256 \
+|| wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/aarch64/alpine-standard-3.16.2-aarch64.iso.sha256
 
 cat alpine-standard-3.16.2-aarch64.iso.sha256 | sha256sum -c
 
-nix build nixpkgs#pkgsCross.aarch64-multiplatform-musl.OVMF.fd
+nix build nixpkgs#pkgsCross.aarch64-multiplatform-musl.OVMF.fd --no-link
 FULL_PATH_FOR_QEMU_EFI="$(nix eval --raw nixpkgs#pkgsCross.aarch64-multiplatform-musl.OVMF.fd)"/AAVMF/QEMU_EFI-pflash.raw
 
-rm -fv alpine.qcow2; qemu-img create -f qcow2 alpine.qcow2 10G
+# No estate
+rm -fv alpine.qcow2
+qemu-img create -f qcow2 alpine.qcow2 10G
 
 qemu-system-aarch64 \
 -nic user \
@@ -707,14 +825,12 @@ From:
 
 ##### NixOS Intel x86_64 -> QEMU -> arm -> amd, x86_64 -> aarch64
 
+
 ```bash
 doas mkdir -pv -m 0755 /nix
 doas chown -v "$(id -u)":"$(id -g)" /nix
 ```
 
-```bash
-echo '. "$HOME"/.nix-profile/etc/profile.d/nix.sh' >> ~/.profile
-```
 
 ```bash
 BASE_URL='https://raw.githubusercontent.com/ES-Nix/get-nix/' \
@@ -727,31 +843,41 @@ BASE_URL='https://raw.githubusercontent.com/ES-Nix/get-nix/' \
 && nix flake --version
 ```
 
+```bash
+echo '. "$HOME"/.nix-profile/etc/profile.d/nix.sh' >> ~/.profile
+```
+
 
 ```bash
 command -v qemu-img || nix profile install nixpkgs#qemu
 command -v wget || nix profile install nixpkgs#wget
 
-rm -fv alpine.qcow2; qemu-img create -f qcow2 alpine.qcow2 8G
+rm -fv alpine.qcow2
+qemu-img create -f qcow2 alpine.qcow2 8G
 
-wget https://dl-cdn.alpinelinux.org/alpine/v3.14/releases/x86_64/alpine-virt-3.14.2-x86_64.iso
+# wget https://dl-cdn.alpinelinux.org/alpine/v3.14/releases/x86_64/alpine-virt-3.14.2-x86_64.iso
+BASE_URL='https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/x86_64/'
+test -f alpine-standard-3.16.2-x86_64.iso || wget "${BASE_URL}"alpine-standard-3.16.2-x86_64.iso
+test -f alpine-standard-3.16.2-x86_64.iso.sha256 || wget "${BASE_URL}"alpine-standard-3.16.2-x86_64.iso.sha256
+
+cat alpine-standard-3.16.2-x86_64.iso.sha256 | sha256sum -c
 
 
 qemu-system-x86_64 \
 -m 2048M \
 -nic user \
 -boot d \
--cdrom alpine-virt-3.14.2-x86_64.iso \
+-cdrom alpine-standard-3.16.2-x86_64.iso \
 -hda alpine.qcow2 \
 -nographic \
--cpu Haswell-noTSX-IBRS \
+-cpu Haswell-noTSX-IBRS,vmx=on \
 -smp $(nproc)
 ```
 
 
 ```bash
-DISK_NAME=sda
 # fdisk -l /dev/$DISK_NAME
+DISK_NAME=sda
 export ERASE_DISKS=/dev/$DISK_NAME \
 && { cat << EOF > answerfile
 # Example answer file for setup-alpine script
@@ -761,7 +887,7 @@ export ERASE_DISKS=/dev/$DISK_NAME \
 KEYMAPOPTS="pt pt"
 
 # Set hostname to 
-HOSTNAMEOPTS="-n alpine-x86-64"
+HOSTNAMEOPTS="-n alpine-x8664"
 
 # Set device manager to mdev
 DEVDOPTS=mdev
@@ -821,7 +947,7 @@ EOF
 
 ```bash
 qemu-system-x86_64 \
--cpu Haswell-noTSX-IBRS \
+-cpu Haswell-noTSX-IBRS,vmx=on \
 -enable-kvm \
 -m 2048M \
 -nographic \
@@ -829,14 +955,15 @@ qemu-system-x86_64 \
 -smp $(nproc)
 ```
 
+
 Run as root:
 ```bash
-adduser \
--D \
--G wheel \
--s /bin/sh \
--h /home/nixuser \
--g "User" nixuser
+#adduser \
+#-D \
+#-G wheel \
+#-s /bin/sh \
+#-h /home/nixuser \
+#-g "User" nixuser
 
 echo 'nixuser:123' | chpasswd
 
