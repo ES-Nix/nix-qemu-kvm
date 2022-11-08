@@ -9,15 +9,12 @@
 
 
 ```bash
-wget https://dl-cdn.alpinelinux.org/alpine/v3.14/releases/x86_64/alpine-virt-3.14.2-x86_64.iso
-```
+command -v qemu-img || nix profile install nixpkgs#qemu
+command -v wget || nix profile install nixpkgs#wget
 
-```bash
-qemu-img \
-create \
--f qcow2 \
-alpine.qcow2 \
-8G
+rm -fv alpine.qcow2; qemu-img create -f qcow2 alpine.qcow2 10G
+
+wget https://dl-cdn.alpinelinux.org/alpine/v3.14/releases/x86_64/alpine-virt-3.14.2-x86_64.iso
 ```
 
 ```bash
@@ -61,7 +58,7 @@ root
 ```bash
 # echo 'root:123' | chpasswd
 
-export ERASE_DISKS=/dev/sda \
+export ERASE_DISKS=/dev/vdb \
 && { cat << EOF > answerfile
 # Customised example answer file for setup-alpine script
 # If you don't want to use a certain option, then comment it out
@@ -101,8 +98,8 @@ SSHDOPTS="-c openssh"
 # Use openntpd
 NTPOPTS="-c openntpd"
 
-# Use /dev/sda as a data disk
-DISKOPTS="-s 2048 -m sys /dev/sda"
+# Use /dev/vdb as a data disk
+DISKOPTS="-s 2048 -m sys /dev/vdb"
 
 EOF
 } && setup-alpine -f answerfile \
@@ -143,29 +140,15 @@ reboot
 ```
 Adapted from: https://stackoverflow.com/a/54934781
 
+
+
+
 #### Manual installation 
 
 ```bash
 setup-alpine
 ```
 From: https://wiki.alpinelinux.org/wiki/Install_Alpine_in_Qemu
-
-```bash
-pt
-pt-nativo
-cat 
-eth0
-dhcp
-n
-UTC
-none
-openssh
-sda
-data
-y
-none
-/var/cache/apk
-```
 
 
 ```bash
@@ -322,22 +305,34 @@ wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/aarch64/alpine-standar
 
 wget https://dl-cdn.alpinelinux.org/alpine/edge/releases/aarch64/netboot/initramfs-lts
 wget https://dl-cdn.alpinelinux.org/alpine/edge/releases/aarch64/netboot/vmlinuz-lts
-# wget https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/aarch64/netboot/modloop-lts
+wget https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/aarch64/netboot/modloop-lts
 
 
 cat alpine-standard-3.16.2-aarch64.iso.sha256 | sha256sum -c
 
-echo '7d4d4a4d7c2293a5377ad00db7f8e33fa7a0422b851f86710df84fb11e628465  initramfs-lts' | sha256sum -c
-echo '0271b50b0cc3b1c50cb2e610aa7cfce1180596dc1cad96cc17c95007d3746dbc  vmlinuz-lts' | sha256sum -c
-# echo 'd47f97ef54285583301478f88004233880543aac203dcf08a4cb9142b7775a93  modloop-lts' | sha256sum -c
+echo '7ce36b75e74ee8b87c3330174c682859c860efba32ba346b828f91f72b25d76a  initramfs-lts' | sha256sum -c
+echo '7cd248614ca4abbc416442d9cfb2086f377b907014f53ad3f6d3516deff4a80f  vmlinuz-lts' | sha256sum -c
+echo 'd47f97ef54285583301478f88004233880543aac203dcf08a4cb9142b7775a93  modloop-lts' | sha256sum -c
 ```
 
 ```bash
-nix profile install nixpkgs#qemu
+command -v qemu-img || nix profile install nixpkgs#qemu
+
+rm -fv alpine-img.qcow2; qemu-img create -f qcow2 alpine-img.qcow2 10G
 ```
 
+
 ```bash
-qemu-img create -f qcow2 alpine-img.qcow2 10G
+qemu-system-aarch64 \
+-machine virt \
+-m 1024 \
+-cpu cortex-a57 \
+-kernel vmlinuz-lts \
+-initrd initramfs-lts \
+-append "console=ttyAMA0 ip=dhcp alpine_repo=http://dl-cdn.alpinelinux.org/alpine/edge/main/ modloop=http://dl-cdn.alpinelinux.org/alpine/edge/releases/aarch64/netboot/modloop-lts" \
+-nographic \
+-hda alpine-img.qcow2 \
+-device virtio-gpu-pci
 ```
 
 ```bash
@@ -358,15 +353,26 @@ qemu-system-aarch64 \
 -cpu cortex-a57 \
 -kernel vmlinuz-lts \
 -initrd initramfs-lts \
--append "console=ttyAMA0 ip=dhcp alpine_repo=http://dl-cdn.alpinelinux.org/alpine/edge/main/ modloop=http://dl-cdn.alpinelinux.org/alpine/edge/releases/aarch64/netboot/modloop-lts" \
--nographic \
--hda alpine-img.qcow2 \
--device virtio-gpu-pci
+-append "console=ttyAMA0 ip=dhcp" \
+-nographic
 ```
 
 ```bash
-setup-alpine -c answerfile
+#setup-alpine -c answerfile
 ```
+
+
+```bash
+apk add e2fsprogs lsblk parted
+
+parted /dev/vda mklabel gpt
+parted -a opt /dev/vda mkpart primary ext4 0% 100%
+
+mkfs.ext4 -L datapartition /dev/vda1
+lsblk --fs
+lsblk -o NAME,FSTYPE,LABEL,UUID,MOUNTPOINT
+```
+
 
 
 ```bash
@@ -409,7 +415,7 @@ PROXYOPTS=none
 APKREPOSOPTS="-1"
 
 # Create admin user
-USEROPTS="-a -u -g audio,video,netdev alpineuser"
+USEROPTS="-a -u -g audio,video,netdev nixuser"
 #USERSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@example.com"
 #USERSSHKEY="https://example.com/juser.keys"
 
@@ -421,7 +427,7 @@ SSHDOPTS=openssh
 # Use openntpd
 NTPOPTS="openntpd"
 
-# Use /dev/sda as a sys disk
+# Use /dev/vda as a sys disk
 DISKOPTS="-s 2048 -m sys /dev/vda"
 
 # Setup storage with label APKOVL for config storage
@@ -450,6 +456,63 @@ qemu-system-aarch64 \
 -initrd initramfs-lts \
 -append "console=ttyAMA0 ip=dhcp alpine_repo=http://dl-cdn.alpinelinux.org/alpine/edge/main/ modloop=http://dl-cdn.alpinelinux.org/alpine/edge/releases/aarch64/netboot/modloop-lts" \
 -smp $(nproc)
+```
+
+```bash
+apk update
+apk add --no-cache sudo
+
+adduser \
+-D \
+-G wheel \
+-s /bin/sh \
+-h /home/nixuser \
+-g "User" nixuser
+
+test -d /etc/sudoers.d || mkdir -pv /etc/sudoers.d
+echo 'nixuser ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/nixuser
+
+echo 'nixuser:123' | chpasswd
+reboot
+# passwd nixuser
+```
+Adapted from: https://stackoverflow.com/a/54934781
+
+
+```bash
+adduser \
+-D \
+-s /bin/sh \
+-h /home/nixuser \
+-g "User" nixuser
+
+echo 'nixuser:123' | chpasswd
+```
+
+Run as root:
+```bash
+apk add alpine-sdk doas curl xz
+
+test -d /etc/doas.d || mkdir -p /etc/doas.d
+
+echo 'permit persist :wheel' >> /etc/doas.d/doas.conf
+
+modprobe tun \
+&& echo tun >> /etc/modules \
+&& echo nixuser:100000:65536 > /etc/subuid \
+&& echo nixuser:100000:65536 > /etc/subgid \
+&& rc-update add cgroups \
+&& rc-service cgroups start
+```
+From:
+- https://wiki.alpinelinux.org/wiki/Include:Setup_your_system_and_account_for_building_packages
+- https://unix.stackexchange.com/questions/689678/automate-alpine-linux-installation#comment1320137_689678
+- https://wejn.org/2022/04/alpinelinux-unattended-install/
+- https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#Options
+
+
+```bash
+reboot
 ```
 
 
@@ -497,7 +560,7 @@ nix build nixpkgs#OVMF.fd --no-link \
 -smp $(nproc)
 ```
 
-#### The magic QEMU_EFI-pflash.raw
+#### The magic QEMU_EFI-pflash.raw, QEMU, KVM, aarch64, Alpine 3.16.2
 
 
 
@@ -506,22 +569,12 @@ wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/aarch64/alpine-standar
 wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/aarch64/alpine-standard-3.16.2-aarch64.iso.sha256
 
 cat alpine-standard-3.16.2-aarch64.iso.sha256 | sha256sum -c
-```
 
-
-```bash
 nix build nixpkgs#pkgsCross.aarch64-multiplatform-musl.OVMF.fd
 FULL_PATH_FOR_QEMU_EFI="$(nix eval --raw nixpkgs#pkgsCross.aarch64-multiplatform-musl.OVMF.fd)"/AAVMF/QEMU_EFI-pflash.raw
-```
 
+rm -fv alpine.qcow2; qemu-img create -f qcow2 alpine.qcow2 10G
 
-```bash
-rm -fv alpine.qcow2
-
-qemu-img create -f qcow2 alpine.qcow2 10G
-```
-
-```bash
 qemu-system-aarch64 \
 -nic user \
 -boot d \
@@ -535,201 +588,14 @@ qemu-system-aarch64 \
 -smp $(nproc)
 ```
 
-#### Oneliner
-
-
-```bash
-nix build nixpkgs#pkgsCross.aarch64-multiplatform-musl.OVMF.fd --no-link \
-&& FULL_PATH_FOR_QEMU_EFI="$(nix eval --raw nixpkgs#pkgsCross.aarch64-multiplatform-musl.OVMF.fd)"/AAVMF/QEMU_EFI-pflash.raw \
-&& rm -fv alpine.qcow2 \
-&& qemu-img create -f qcow2 alpine.qcow2 10G \
-&& qemu-system-aarch64 \
--nic user \
--boot d \
--machine virt \
--cpu cortex-a57 \
--drive if=pflash,format=raw,readonly=on,file="${FULL_PATH_FOR_QEMU_EFI}" \
--m 2048M \
--nographic \
--drive format=raw,readonly=on,file=alpine-standard-3.16.2-aarch64.iso \
--drive file=alpine.qcow2 \
--smp $(nproc)
-```
-
-
-```bash
-setup-alpine
-```
-
-
-```bash
-localhost:~# setup-alpine
-Enter system hostname (fully qualified form, e.g. 'foo.example.org') [localhost] 
-Available interfaces are: eth0.
-Enter '?' for help on bridges, bonding and vlans.
-Which one do you want to initialize? (or '?' or 'done') [eth0] 
-Ip address for eth0? (or 'dhcp', 'none', '?') [dhcp] 
-Do you want to do any manual network configuration? (y/n) [n] 
-udhcpc: started, v1.35.0
-udhcpc: broadcasting discover
-udhcpc: broadcasting select for 10.0.2.15, server 10.0.2.2
-udhcpc: lease of 10.0.2.15 obtained from 10.0.2.2, lease time 86400
-Changing password for root
-New password: 
-Bad password: too short
-Retype password: 
-passwd: password for root changed by root
-Which timezone are you in? ('?' for list) [UTC] 
- * WARNING: clock skew detected!
- * Saving 256 bits of non-creditable seed for next boot
- * WARNING: clock skew detected!
- * Starting busybox acpid ...
- [ ok ]
- * Starting busybox crond ...
- [ ok ]
-HTTP/FTP proxy URL? (e.g. 'http://proxy:8080', or 'none') [none] 
-Which NTP client to run? ('busybox', 'openntpd', 'chrony' or 'none') [chrony] 
- * service chronyd added to runlevel default
- * Starting chronyd ...
- [ ok ]
-
-Available mirrors:
-1) dl-cdn.alpinelinux.org
-2) uk.alpinelinux.org
-3) mirror.yandex.ru
-4) mirrors.gigenet.com
-5) mirror1.hs-esslingen.de
-6) mirror.leaseweb.com
-7) mirror.fit.cvut.cz
-8) alpine.mirror.far.fi
-9) alpine.mirror.wearetriple.com
-10) mirror.clarkson.edu
-11) mirror.aarnet.edu.au
-12) mirrors.dotsrc.org
-13) ftp.halifax.rwth-aachen.de
-14) mirrors.tuna.tsinghua.edu.cn
-15) mirrors.ustc.edu.cn
-16) mirrors.nju.edu.cn
-17) mirror.lzu.edu.cn
-18) ftp.acc.umu.se
-19) mirror.xtom.com.hk
-20) mirror.csclub.uwaterloo.ca
-21) alpinelinux.mirror.iweb.com
-22) pkg.adfinis.com
-23) mirror.ps.kz
-24) mirror.rise.ph
-25) mirror.operationtulip.com
-26) mirrors.ircam.fr
-27) mirror.math.princeton.edu
-28) mirrors.sjtug.sjtu.edu.cn
-29) ftp.icm.edu.pl
-30) mirror.ungleich.ch
-31) mirrors.edge.kernel.org
-32) ap.edge.kernel.org
-33) eu.edge.kernel.org
-34) download.nus.edu.sg
-35) alpine.yourlabs.org
-36) mirror.pit.teraswitch.com
-37) mirror.reenigne.net
-38) quantum-mirror.hu
-39) tux.rainside.sk
-40) alpine.cs.nycu.edu.tw
-41) mirror.ihost.md
-42) mirror.ette.biz
-43) mirror.lagoon.nc
-44) alpinelinux.c3sl.ufpr.br
-45) foobar.turbo.net.id
-46) alpine.ccns.ncku.edu.tw
-47) mirror.dst.ca
-48) mirror.kumi.systems
-49) mirror.sabay.com.kh
-50) alpine.northrepo.ca
-51) alpine.bardia.tech
-52) mirrors.ocf.berkeley.edu
-53) mirrors.pardisco.co
-54) mirrors.aliyun.com
-55) mirror.alwyzon.net
-56) mirror1.ku.ac.th
-57) mirrors.bfsu.edu.cn
-58) ftpmirror2.infania.net
-59) repo.iut.ac.ir
-60) mirror.fcix.net
-61) alpine.sakamoto.pl
-62) mirror.2degrees.nz
-63) mirror.arvancloud.com
-64) mirror.0-1.cloud
-65) mirror.kku.ac.th
-66) mirror.uepg.br
-67) alpine.astra.in.ua
-68) mirrors.neusoft.edu.cn
-69) ftp.udx.icscoe.jp
-70) alpinelinux.mirror.garr.it
-71) mirrors.hostico.ro
-72) mirror.serverion.com
-73) alpinelinux.qontinuum.space
-74) alpine.kyberorg.fi
-
-r) Add random from the above list
-f) Detect and add fastest mirror from above list
-e) Edit /etc/apk/repositories with text editor
-
-Enter mirror number (1-74) or URL to add (or r/f/e/done) [1] 
-Added mirror dl-cdn.alpinelinux.org
-Updating repository indexes... done.
-Setup a user? (enter a lower-case loginname, or 'no') [no] 
-Which ssh server? ('openssh', 'dropbear' or 'none') [openssh] 
-Allow root ssh login? ('?' for help) [prohibit-password] 
-Enter ssh key or URL for root (or 'none') [none] 
- * service sshd added to runlevel default
- * Caching service dependencies ...
- [ ok ]
-ssh-keygen: generating new host keys: RSA DSA ECDSA ED25519 
- * Starting sshd ...
- [ ok ]
-Available disks are:
-  vdb   (10.7 GB 0x1af4 )
-Which disk(s) would you like to use? (or '?' for help or 'none') [none] vdb
-The following disk is selected:
-  vdb   (10.7 GB 0x1af4 )
-How would you like to use it? ('sys', 'data', 'crypt', 'lvm' or '?' for help) [?] sys
-WARNING: The following disk(s) will be erased:
-  vdb   (10.7 GB 0x1af4 )
-WARNING: Erase the above disk(s) and continue? (y/n) [n] y
-Creating file systems...
-mkfs.fat 4.2 (2021-01-31)
-Installing system on /dev/vdb3:
-Installing for arm64-efi platform.
-Installation finished. No error reported.       
-100% ████████████████████████████████████████████==> initramfs: creating /boot/initramfs-lts
-Generating grub configuration file ...
-Found linux image: /boot/vmlinuz-lts
-Found initrd image: /boot/initramfs-lts
-Warning: os-prober will not be executed to detect other bootable partitions.
-Systems on them will not be added to the GRUB boot configuration.
-Check GRUB_DISABLE_OS_PROBER documentation entry.
-done
-
-Installation is complete. Please reboot.
-```
 
 
 
 ```bash
-setup-alpine -c answerfile
-```
-
-
-```bash
-setup-alpine -q
-```
-
-
-```bash
-# fdisk -l /dev/vda
-
-export ERASE_DISKS=/dev/vda \
+# fdisk -l /dev/vdb
+export ERASE_DISKS=/dev/vdb \
 && { cat << EOF > answerfile
-# Customised example answer file for setup-alpine script
+# Example answer file for setup-alpine script
 # If you don't want to use a certain option, then comment it out
 
 # Use US layout with US variant
@@ -738,38 +604,56 @@ KEYMAPOPTS="pt pt"
 # Set hostname to 
 HOSTNAMEOPTS="-n alpine-aarch64"
 
+# Set device manager to mdev
+DEVDOPTS=mdev
+
 # Contents of /etc/network/interfaces
 INTERFACESOPTS="auto lo
 iface lo inet loopback
 
 auto eth0
 iface eth0 inet dhcp
-    hostname alpine-vm-qemu-machine
+    hostname alpine-test
 "
 
 # Search domain of example.com, Google public nameserver
-DNSOPTS="-d example.com 8.8.8.8"
+# DNSOPTS="-d example.com 8.8.8.8"
 
 # Set timezone to UTC
 TIMEZONEOPTS="-z UTC"
+# TIMEZONEOPTS=none
 
 # set http/ftp proxy
-PROXYOPTS="none"
+#PROXYOPTS="http://webproxy:8080"
+PROXYOPTS=none
 
-# Add a random mirror
+# Add first mirror (CDN)
 APKREPOSOPTS="-1"
 
-APKCACHEOPTS="/var/cache/apk"
+# Create admin user
+USEROPTS="-a -u -g audio,video,netdev nixuser"
+#USERSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@example.com"
+#USERSSHKEY="https://example.com/juser.keys"
 
 # Install Openssh
-SSHDOPTS="-c openssh"
+# SSHDOPTS="-c openssh"
+#ROOTSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@example.com"
+#ROOTSSHKEY="https://example.com/juser.keys"
 
 # Use openntpd
-NTPOPTS="-c openntpd"
+# NTPOPTS="-c openntpd"
 
-# Use /dev/sda as a data disk
-DISKOPTS="-s 2048 -m sys /dev/vda"
+# Use /dev/sdb as a sys disk
+DISKOPTS="-s 2048 -m sys /dev/vdb"
 
+# Setup storage with label APKOVL for config storage
+#LBUOPTS="LABEL=APKOVL"
+LBUOPTS=none
+
+#APKCACHEOPTS="/media/LABEL=APKOVL/cache"
+APKCACHEOPTS="/var/cache/apk"
+
+DEFAULT_DISK="-m sys /mnt /dev/vdb"
 EOF
 } && setup-alpine -f answerfile \
 && poweroff
@@ -778,21 +662,20 @@ EOF
 
 
 ```bash
+nix build nixpkgs#pkgsCross.aarch64-multiplatform-musl.OVMF.fd --no-link \
+&& FULL_PATH_FOR_QEMU_EFI="$(nix eval --raw nixpkgs#pkgsCross.aarch64-multiplatform-musl.OVMF.fd)"/AAVMF/QEMU_EFI-pflash.raw
 qemu-system-aarch64 \
 -machine virt \
 -cpu cortex-a57 \
 -drive if=pflash,format=raw,readonly=on,file="${FULL_PATH_FOR_QEMU_EFI}" \
--m 2048M \
+-m 4096M \
 -nographic \
 -drive file=alpine.qcow2 \
 -smp $(nproc)
 ```
 
-
+Run as root:
 ```bash
-apk update
-apk add --no-cache sudo
-
 adduser \
 -D \
 -G wheel \
@@ -800,55 +683,183 @@ adduser \
 -h /home/nixuser \
 -g "User" nixuser
 
-echo 'nixuser ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/nixuser
-
 echo 'nixuser:123' | chpasswd
-reboot
-# passwd nixuser
-```
-Adapted from: https://stackoverflow.com/a/54934781
 
-
-```bash
-adduser \
--D \
--s /bin/sh \
--h /home/nixuser \
--g "User" nixuser
-
-echo 'nixuser:123' | chpasswd
-```
-
-
-```bash
 apk add alpine-sdk doas curl xz
-```
-From:
-- https://wiki.alpinelinux.org/wiki/Include:Setup_your_system_and_account_for_building_packages
-- https://unix.stackexchange.com/questions/689678/automate-alpine-linux-installation#comment1320137_689678
-- https://wejn.org/2022/04/alpinelinux-unattended-install/
 
-
-```bash
 test -d /etc/doas.d || mkdir -p /etc/doas.d
-
 echo 'permit persist :wheel' >> /etc/doas.d/doas.conf
-```
-From: https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#Options
 
-```bash
-# Run as root
 modprobe tun \
 && echo tun >> /etc/modules \
 && echo nixuser:100000:65536 > /etc/subuid \
 && echo nixuser:100000:65536 > /etc/subgid \
 && rc-update add cgroups \
-&& rc-service cgroups start
+&& rc-service cgroups start \
+&& reboot
+```
+From:
+- https://wiki.alpinelinux.org/wiki/Include:Setup_your_system_and_account_for_building_packages
+- https://unix.stackexchange.com/questions/689678/automate-alpine-linux-installation#comment1320137_689678
+- https://wejn.org/2022/04/alpinelinux-unattended-install/
+- https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#Options
+
+
+##### NixOS Intel x86_64 -> QEMU -> arm -> amd, x86_64 -> aarch64
+
+```bash
+doas mkdir -pv -m 0755 /nix
+doas chown -v "$(id -u)":"$(id -g)" /nix
 ```
 
 ```bash
-reboot
+echo '. "$HOME"/.nix-profile/etc/profile.d/nix.sh' >> ~/.profile
 ```
+
+```bash
+BASE_URL='https://raw.githubusercontent.com/ES-Nix/get-nix/' \
+&& SHA256=5443257f9e3ac31c5f0da60332d7c5bebfab1cdf \
+&& NIX_RELEASE_VERSION='2.10.2' \
+&& curl -fsSL "${BASE_URL}""$SHA256"/get-nix.sh | sh -s -- ${NIX_RELEASE_VERSION} \
+&& . "$HOME"/.nix-profile/etc/profile.d/nix.sh \
+&& . ~/."$(ps -ocomm= -q $$)"rc \
+&& export TMPDIR=/tmp \
+&& nix flake --version
+```
+
+
+```bash
+command -v qemu-img || nix profile install nixpkgs#qemu
+command -v wget || nix profile install nixpkgs#wget
+
+rm -fv alpine.qcow2; qemu-img create -f qcow2 alpine.qcow2 8G
+
+wget https://dl-cdn.alpinelinux.org/alpine/v3.14/releases/x86_64/alpine-virt-3.14.2-x86_64.iso
+
+
+qemu-system-x86_64 \
+-m 2048M \
+-nic user \
+-boot d \
+-cdrom alpine-virt-3.14.2-x86_64.iso \
+-hda alpine.qcow2 \
+-nographic \
+-cpu Haswell-noTSX-IBRS \
+-smp $(nproc)
+```
+
+
+```bash
+DISK_NAME=sda
+# fdisk -l /dev/$DISK_NAME
+export ERASE_DISKS=/dev/$DISK_NAME \
+&& { cat << EOF > answerfile
+# Example answer file for setup-alpine script
+# If you don't want to use a certain option, then comment it out
+
+# Use US layout with US variant
+KEYMAPOPTS="pt pt"
+
+# Set hostname to 
+HOSTNAMEOPTS="-n alpine-x86-64"
+
+# Set device manager to mdev
+DEVDOPTS=mdev
+
+# Contents of /etc/network/interfaces
+INTERFACESOPTS="auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+    hostname alpine-test
+"
+
+# Search domain of example.com, Google public nameserver
+# DNSOPTS="-d example.com 8.8.8.8"
+
+# Set timezone to UTC
+TIMEZONEOPTS="-z UTC"
+# TIMEZONEOPTS=none
+
+# set http/ftp proxy
+#PROXYOPTS="http://webproxy:8080"
+PROXYOPTS=none
+
+# Add first mirror (CDN)
+APKREPOSOPTS="-1"
+
+# Create admin user
+USEROPTS="-a -u -g audio,video,netdev nixuser"
+#USERSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@example.com"
+#USERSSHKEY="https://example.com/juser.keys"
+
+# Install Openssh
+SSHDOPTS="-c openssh"
+#ROOTSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@example.com"
+#ROOTSSHKEY="https://example.com/juser.keys"
+
+# Use openntpd
+NTPOPTS="-c openntpd"
+
+# Use /dev/sdb as a sys disk
+DISKOPTS="-s 2048 -m sys /dev/$DISK_NAME"
+
+# Setup storage with label APKOVL for config storage
+#LBUOPTS="LABEL=APKOVL"
+LBUOPTS=none
+
+#APKCACHEOPTS="/media/LABEL=APKOVL/cache"
+APKCACHEOPTS="/var/cache/apk"
+
+DEFAULT_DISK="-m sys /mnt /dev/$DISK_NAME"
+EOF
+} && setup-alpine -f answerfile \
+&& poweroff
+```
+
+
+```bash
+qemu-system-x86_64 \
+-cpu Haswell-noTSX-IBRS \
+-enable-kvm \
+-m 2048M \
+-nographic \
+-drive file=alpine.qcow2 \
+-smp $(nproc)
+```
+
+Run as root:
+```bash
+adduser \
+-D \
+-G wheel \
+-s /bin/sh \
+-h /home/nixuser \
+-g "User" nixuser
+
+echo 'nixuser:123' | chpasswd
+
+apk add --no-cache alpine-sdk doas curl xz
+
+test -d /etc/doas.d || mkdir -p /etc/doas.d
+
+echo 'permit persist :wheel' >> /etc/doas.d/doas.conf
+
+modprobe tun \
+&& echo tun >> /etc/modules \
+&& echo nixuser:100000:65536 > /etc/subuid \
+&& echo nixuser:100000:65536 > /etc/subgid \
+&& rc-update add cgroups \
+&& rc-service cgroups start \
+&& reboot
+```
+From:
+- https://wiki.alpinelinux.org/wiki/Include:Setup_your_system_and_account_for_building_packages
+- https://unix.stackexchange.com/questions/689678/automate-alpine-linux-installation#comment1320137_689678
+- https://wejn.org/2022/04/alpinelinux-unattended-install/
+- https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#Options
+
 
 
 
@@ -856,8 +867,6 @@ reboot
 cp .bashrc .profile
 . ~/.nix-profile/etc/profile.d/nix.sh 
 ```
-
-
 
 
 ```bash
@@ -876,6 +885,27 @@ apk add doas-sudo-shim
 ```
 https://news.ycombinator.com/item?id=29330394
 
+
+
+```bash
+#apk update
+#apk add --no-cache sudo
+#
+#adduser \
+#-D \
+#-G wheel \
+#-s /bin/sh \
+#-h /home/nixuser \
+#-g "User" nixuser
+#
+#test -d /etc/sudoers.d || mkdir -pv /etc/sudoers.d
+#echo 'nixuser ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/nixuser
+#
+#echo 'nixuser:123' | chpasswd
+#reboot
+# passwd nixuser
+```
+Adapted from: https://stackoverflow.com/a/54934781
 
 
 ### NixOS ARM in non-NixOS GNU/linux systems emulated using QEMU + KVM   

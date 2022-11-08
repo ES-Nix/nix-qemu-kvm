@@ -474,6 +474,9 @@ useradd -s /bin/bash --uid 56789 nixuser
 usermod --append nixuser kvm
 ```
 
+normalizePackageName = name: let parts = builtins.split "[-_.]+" name; partsWithoutSeparator = builtins.filter (x: builtins.typeOf x == "string") parts; in lib.strings.toLower (lib.strings.concatStringsSep "-" partsWithoutSeparator);
+
+
 
 ```bash
 docker \
