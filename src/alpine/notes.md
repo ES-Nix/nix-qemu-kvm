@@ -133,7 +133,7 @@ test -f alpine-virt-3.16.2-x86_64.iso \
 || wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/x86_64/alpine-virt-3.16.2-x86_64.iso
 
 qemu-kvm \
--m 512 \
+-m 1024M \
 -nic user \
 -boot d \
 -cdrom alpine-virt-3.16.2-x86_64.iso \
@@ -142,6 +142,18 @@ qemu-kvm \
 -enable-kvm \
 -cpu host \
 -smp $(nproc)
+```
+
+```bash
+qemu-system-x86_64 \
+-m 2048M \
+-nic user \
+-boot d \
+-cdrom alpine-virt-3.16.2-x86_64.iso  \
+-hda alpine.qcow2 \
+-nographic \
+-cpu Haswell \
+-smp 4
 ```
 
 
@@ -220,10 +232,13 @@ EOF
 && poweroff
 ```
 
+```bash
+cp -fv alpine.qcow2 alpine-just-installed.qcow2
+```
 
 ```bash
 qemu-kvm \
--m 512 \
+-m 2048M \
 -nic user \
 -hda alpine.qcow2 \
 -nographic \
@@ -233,7 +248,7 @@ qemu-kvm \
 
 It must be possible to login as `root` or as `nixuser`.
 
-> It probably come from `USEROPTS="-a -u -g audio,video,netdev nixuser"`
+> It probably comes from `USEROPTS="-a -u -g audio,video,netdev nixuser"`
 
 Run as root:
 ```bash
@@ -266,6 +281,73 @@ From:
 - https://wejn.org/2022/04/alpinelinux-unattended-install/
 - https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#Options
 
+
+```bash
+cp -fv  alpine.qcow2 alpine-with-nixuser.qcow2
+```
+
+
+```bash
+doas mkdir -pv -m 0755 /nix \
+&& doas chown -v "$(id -u)":"$(id -g)" /nix \
+&& BASE_URL='https://raw.githubusercontent.com/ES-Nix/get-nix/' \
+&& SHA256=5443257f9e3ac31c5f0da60332d7c5bebfab1cdf \
+&& NIX_RELEASE_VERSION='2.10.2' \
+&& curl -fsSL "${BASE_URL}""$SHA256"/get-nix.sh | sh -s -- ${NIX_RELEASE_VERSION} \
+&& . "$HOME"/.nix-profile/etc/profile.d/nix.sh \
+&& . ~/."$(ps -ocomm= -q $$)"rc \
+&& export TMPDIR=/tmp \
+&& nix flake --version
+
+echo '. "$HOME"/.nix-profile/etc/profile.d/nix.sh' >> ~/.profile
+. ~/.profile
+nix flake --version
+
+doas poweroff
+```
+
+```bash
+cp -fv  alpine.qcow2 alpine-with-nixuser-and-nix.qcow2
+```
+
+```bash
+nix \
+profile \
+install \
+--refresh \
+github:ES-Nix/podman-rootless/from-nixpkgs#podman
+
+podman run -it --rm ubuntu bash
+```
+
+
+
+```bash
+qemu-kvm \
+-m 1048M \
+-nic user \
+-hda alpine.qcow2 \
+-nographic \
+-enable-kvm \
+-smp $(nproc) \
+-net nic,model=virtio \
+-net user,hostfwd=tcp:127.0.0.1:9000-:9000 \
+-device virtio-gpu-pci \
+-device virtio-keyboard-pci
+```
+
+```bash
+nix run nixpkgs#python3 -- -m http.server 9000
+```
+
+```bash
+# Broken as of now
+nix shell nixpkgs#pkgsStatic.python3Minimal --command python -m http.server 9000
+```
+
+```bash
+test $(curl -s -w '%{http_code}\n' localhost:9000 -o /dev/null) -eq 200 || echo 'Error'
+```
 
 ### Manual installation (Incomplete)
 
