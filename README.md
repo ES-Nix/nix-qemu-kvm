@@ -2904,19 +2904,19 @@ echo 'Start minikube stuff...' \
 && grep -e 'export PATH=~/.local/bin:"$PATH"' -i ~/.bashrc || echo 'export PATH=~/.local/bin:"$PATH"' >> ~/.bashrc \
 && mv ./kubectl ~/.local/bin/kubectl \
 && echo 'End kubectl stuff...' \
-&& echo 'Start docker instalation...' \
+&& echo 'Start docker installation...' \
 && curl -fsSL https://get.docker.com | sudo sh \
 && getent group docker || sudo groupadd docker \
 && sudo usermod --append --groups docker "$USER" \
 && docker --version \
-&& echo 'End docker instalation!' \
+&& echo 'End docker installation!' \
 && sudo apt-get install -y golang-go \
 && sudo reboot
 ```
 
 
 ```bash
-echo 'Start docker instalation...' \
+echo 'Start docker installation...' \
 && curl -fsSL https://get.docker.com | sudo sh \
 && getent group docker || sudo groupadd docker \
 && sudo usermod --append --groups docker "$USER" \

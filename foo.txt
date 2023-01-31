@@ -1,0 +1,150 @@
+i was thinking about getting into writing it in lure why because
+17:17
+there is take lure this is what uh
+17:20
+one one engine one core engine now it is
+17:23
+a taking the operator with lua built in
+17:25
+so you have a lure interpreter also with
+17:27
+the tech integrator so that would be
+17:29
+because we don't it's automatically we
+17:32
+have a language where we can write but
+17:34
+rewriting everything in lure is a huge
+17:37
+uh work i i don't want to do at the
+17:40
+moment
+17:41
+what i would like to see is a better
+17:43
+integration or interaction of take life
+17:45
+manager with distribution so this is
+17:48
+quite i mean i'm also packaging for for
+17:50
+debian so i know what this means but it
+17:52
+is
+17:54
+so we have this user mode but it's not
+17:55
+optimal it would be better to have a
+17:58
+better interaction with these
+18:00
+distributions
+18:01
+then what is also a huge problem is
+18:05
+sounds trivial but
+18:06
+actually this is downloading lots of
+18:08
+files we have um as i said we have three
+18:11
+to four container per package times four
+18:14
+thousand so it's twelve thousand files
+18:16
+that author get downloaded for for an
+18:18
+installation
+18:20
+and to get this working somehow
+18:22
+uniformly well you don't want to have
+18:24
+code bars for everything
+18:27
+across all platforms is a pain
+18:29
+so we use lv lwp
+18:32
+to get a stable connection and keep them
+18:34
+up but it falls back to curl and the w
+18:37
+get
+18:38
+and i just mentioned certificates
+18:39
+because it just popped up again i mean
+18:41
+the let's encrypt isg
+18:44
+root x one problem
+18:46
+uh is still beating around so um yeah
+18:49
+it's surprisingly difficult to get this
+18:51
+right
+18:52
+um then cetan as i mentioned before so i
+18:55
+wish
+18:56
+always and i hope but it will not change
+18:59
+anymore for streak the rules i mean like
+19:01
+cran has extremistic rules of the format
+19:03
+of what is uploaded
+19:05
+so that is something that would be
+19:07
+really helpful for getting um
+19:09
+distributing because they could directly
+19:11
+install from sita like cran the ground
+19:13
+manager in starts directly from
+19:15
+agreement this is this is something we
+19:17
+cannot do at the moment
+19:19
+and i mean something because it was
+19:21
+discussed here reuse of some universal
+19:24
+package manager would be nice but i
+19:27
+haven't seen any of the package managers
+19:29
+being being able to run on on
+19:32
+the
+19:33
+set of systems we are supporting even
+19:36
+the reduced set of systems we are
+19:38
+putting on to the dvd
+19:40
+okay some resources uh if you want to
+19:43
+check back so the main website is on the
+19:46
+tap.org live that's the main website
+19:48
+this or well user documentation
+19:50
+developers documentation all kind of
+19:52
+stuff
+19:53
+there is a web view so the main
+19:55
+repository is a subversion repository uh
+19:59
+actually we had uh
+
