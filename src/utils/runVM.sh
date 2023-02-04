@@ -16,10 +16,12 @@ shift 2
 
 # https://github.com/kubernetes/minikube/issues/3634#issuecomment-495015355
 # https://support.solus.io/hc/en-us/articles/360024682131-Unable-to-boot-KVM-VPS-in-SolusVM-cannot-set-up-guest-memory-pc-ram-Cannot-allocate-memory
+# https://bugs.launchpad.net/ubuntu/+source/qemu/+bug/1912706
 args=(
   -drive "file=$image,format=qcow2"
   -drive "file=$userdata,format=qcow2"
   -enable-kvm
+  -vga virtio
   -m 5G
   -nographic
   -serial mon:stdio
