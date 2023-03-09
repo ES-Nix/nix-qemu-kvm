@@ -21,7 +21,7 @@ rec {
 
   image = pkgs.fetchurl {
     url = "https://cloud-images.ubuntu.com/releases/18.04/release/ubuntu-18.04-server-cloudimg-amd64.img";
-    hash = "sha256-umNUh/lAIL1cbbo/F1G7uFZAfO86yvuC3EVb7nKkZz8=";
+    hash = "sha256-dd6qDo+l8nUcCGQlHkP7YujaLwWcIB5g8ZTrmgtDsD8=";
   };
 
   config = {
