@@ -666,9 +666,15 @@ DEFAULT_DISK="-m sys /mnt /dev/$DISK_NAME"
 EOF
 } && setup-alpine -f answerfile \
 && poweroff
+
+# 
 ```
 Refs.:
 - https://gparted.org/h2-fix-msdos-pt.php
+
+```bash
+wget -qO- http://ix.io/4tPf > alpine.sh && chmod -v +x alpine.sh && ./alpine.sh
+```
 
 
 ```bash
