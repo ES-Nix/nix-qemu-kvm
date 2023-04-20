@@ -506,12 +506,12 @@ podman run -it alpine sh
 https://unix.stackexchange.com/questions/622803/why-qemu-doesnt-install-aarch64-alpine-image-on-x86-64-ubuntu-host
 
 ```bash
-wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/aarch64/alpine-standard-3.16.2-aarch64.iso
-wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/aarch64/alpine-standard-3.16.2-aarch64.iso.sha256
+test -f alpine-standard-3.16.2-aarch64.iso || wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/aarch64/alpine-standard-3.16.2-aarch64.iso
+test -f alpine-standard-3.16.2-aarch64.iso.sha256 || wget https://dl-cdn.alpinelinux.org/alpine/v3.16/releases/aarch64/alpine-standard-3.16.2-aarch64.iso.sha256
 
-wget https://dl-cdn.alpinelinux.org/alpine/edge/releases/aarch64/netboot/initramfs-lts
-wget https://dl-cdn.alpinelinux.org/alpine/edge/releases/aarch64/netboot/vmlinuz-lts
-wget https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/aarch64/netboot/modloop-lts
+test -f initramfs-lts || wget https://dl-cdn.alpinelinux.org/alpine/edge/releases/aarch64/netboot/initramfs-lts
+test -f vmlinuz-lts || wget https://dl-cdn.alpinelinux.org/alpine/edge/releases/aarch64/netboot/vmlinuz-lts
+test -f modloop-lts || wget https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/aarch64/netboot/modloop-lts
 
 
 cat alpine-standard-3.16.2-aarch64.iso.sha256 | sha256sum -c
@@ -525,10 +525,7 @@ echo 'd47f97ef54285583301478f88004233880543aac203dcf08a4cb9142b7775a93  modloop-
 command -v qemu-img || nix profile install nixpkgs#qemu
 
 rm -fv alpine-img.qcow2; qemu-img create -f qcow2 alpine-img.qcow2 10G
-```
 
-
-```bash
 qemu-system-aarch64 \
 -machine virt \
 -m 1024 \
@@ -538,6 +535,7 @@ qemu-system-aarch64 \
 -append "console=ttyAMA0 ip=dhcp alpine_repo=http://dl-cdn.alpinelinux.org/alpine/edge/main/ modloop=http://dl-cdn.alpinelinux.org/alpine/edge/releases/aarch64/netboot/modloop-lts" \
 -nographic \
 -hda alpine-img.qcow2 \
+-drive format=raw,readonly=on,file=alpine-standard-3.16.2-aarch64.iso \
 -device virtio-gpu-pci
 ```
 
@@ -580,10 +578,25 @@ lsblk -o NAME,FSTYPE,LABEL,UUID,MOUNTPOINT
 ```
 
 
-
+It worked:
 ```bash
+DISK_NAME=vda
+
+# fdisk -l /dev/$DISK_NAME
 # fdisk -l /dev/vda
-export ERASE_DISKS=/dev/vda \
+
+
+apk add e2fsprogs lsblk parted
+
+parted /dev/$DISK_NAME mklabel gpt
+parted -a opt /dev/$DISK_NAME mkpart primary ext4 0% 100%
+
+mkfs.ext4 -L datapartition /dev/"$DISK_NAME"1
+lsblk --fs
+lsblk -o NAME,FSTYPE,LABEL,UUID,MOUNTPOINT
+
+
+export ERASE_DISKS=/dev/"$DISK_NAME" \
 && { cat << EOF > answerfile
 # Example answer file for setup-alpine script
 # If you don't want to use a certain option, then comment it out
@@ -603,14 +616,14 @@ iface lo inet loopback
 
 auto eth0
 iface eth0 inet dhcp
-    hostname alpine-test
+    hostname alpine-aarch64
 "
 
 # Search domain of example.com, Google public nameserver
-# DNSOPTS="-d example.com 8.8.8.8"
+DNSOPTS="-d nameserver 8.8.8.8"
 
 # Set timezone to UTC
-TIMEZONEOPTS="UTC"
+TIMEZONEOPTS="-z UTC"
 # TIMEZONEOPTS=none
 
 # set http/ftp proxy
@@ -619,37 +632,48 @@ PROXYOPTS=none
 
 # Add first mirror (CDN)
 APKREPOSOPTS="-1"
+# https://it-wars.com/posts/devops/iac-packer-terraform-ansible-libvirt-dnscrypt/
+# APKREPOSOPTS="http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/"
+# APKREPOSOPTS="http://dl-cdn.alpinelinux.org/alpine/edge/main/"
 
 # Create admin user
-USEROPTS="-a -u -g audio,video,netdev nixuser"
+USEROPTS="-a -u -g audio,video,netdev,wheel nixuser"
 #USERSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@example.com"
 #USERSSHKEY="https://example.com/juser.keys"
 
 # Install Openssh
-SSHDOPTS=openssh
+SSHDOPTS="-c openssh"
 #ROOTSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@example.com"
 #ROOTSSHKEY="https://example.com/juser.keys"
 
 # Use openntpd
-NTPOPTS="openntpd"
+# NTPOPTS="-c openntpd"
+NTPOPTS=none
 
 # Use /dev/vda as a sys disk
-DISKOPTS="-s 2048 -m sys /dev/vda"
+DISKOPTS="-s 2048 -m sys /dev/$DISK_NAME"
 
 # Setup storage with label APKOVL for config storage
-#LBUOPTS="LABEL=APKOVL"
+# LBUOPTS="LABEL=APKOVL"
 LBUOPTS=none
 
 #APKCACHEOPTS="/media/LABEL=APKOVL/cache"
-APKCACHEOPTS="/var/cache/apk"
+# APKCACHEOPTS="/var/cache/apk"
 
-DEFAULT_DISK="-m sys /mnt /dev/vda"
+
+# https://gitlab.alpinelinux.org/alpine/aports/-/issues/12353#note_138692
+DEFAULT_DISK="-m sys /mnt /dev/$DISK_NAME"
 EOF
 } && setup-alpine -f answerfile \
 && poweroff
 ```
+Refs.:
+- https://gparted.org/h2-fix-msdos-pt.php
 
 
+```bash
+ping dl-cdn.alpinelinux.org
+```
 
 ```bash
 qemu-system-aarch64 \
@@ -664,6 +688,7 @@ qemu-system-aarch64 \
 -smp $(nproc)
 ```
 
+Broken:
 ```bash
 apk update
 apk add --no-cache sudo
@@ -688,6 +713,15 @@ Run as root:
 ```bash
 apk add alpine-sdk doas curl xz
 
+adduser \
+-D \
+-G wheel \
+-s /bin/sh \
+-h /home/nixuser \
+-g "User" nixuser
+
+echo 'nixuser:123' | chpasswd
+
 test -d /etc/doas.d || mkdir -p /etc/doas.d
 
 echo 'permit persist :wheel' >> /etc/doas.d/doas.conf
@@ -697,7 +731,8 @@ modprobe tun \
 && echo nixuser:100000:65536 > /etc/subuid \
 && echo nixuser:100000:65536 > /etc/subgid \
 && rc-update add cgroups \
-&& rc-service cgroups start
+&& rc-service cgroups start \
+&& reboot
 ```
 From:
 - https://wiki.alpinelinux.org/wiki/Include:Setup_your_system_and_account_for_building_packages
@@ -740,7 +775,7 @@ FULL_PATH_FOR_QEMU_SECURE-CODE_FD="$(nix eval --raw nixpkgs#qemu)"/share/qemu/ed
 
 ```bash
 nix build nixpkgs#OVMF.fd --no-link \
-&& FULL_PATH_FOR_QEMU_EFI="$(nix eval --raw nixpkgs#OVMF.fd)"/AAVMF/QEMU_EFI-pflash.raw \
+&& FULL_PATH_FOR_QEMU_EFI="$(nix eval --raw nixpkgs#OVMF.fd)"/FV/OVMF.fd \
 && rm -fv alpine.qcow2 \
 && qemu-img create -f qcow2 alpine.qcow2 10G \
 && qemu-system-aarch64 \
@@ -776,7 +811,7 @@ rm -fv alpine.qcow2
 qemu-img create -f qcow2 alpine.qcow2 10G
 
 qemu-system-aarch64 \
--nic user \
+-net user \
 -boot d \
 -machine virt \
 -cpu cortex-a57 \
@@ -788,7 +823,7 @@ qemu-system-aarch64 \
 -smp $(nproc)
 ```
 
-
+wget https://cdimage.ubuntu.com/releases/22.04/release/ubuntu-22.04.2-live-server-arm64.iso
 
 
 ```bash
@@ -837,6 +872,7 @@ USEROPTS="-a -u -g audio,video,netdev nixuser"
 
 # Install Openssh
 # SSHDOPTS="-c openssh"
+SSHDOPTS="none"
 #ROOTSSHKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIiHcbg/7ytfLFHUNLRgEAubFz/13SwXBOM/05GNZe4 juser@example.com"
 #ROOTSSHKEY="https://example.com/juser.keys"
 
@@ -844,7 +880,7 @@ USEROPTS="-a -u -g audio,video,netdev nixuser"
 # NTPOPTS="-c openntpd"
 
 # Use /dev/sdb as a sys disk
-DISKOPTS="-s 2048 -m sys /dev/vdb"
+DISKOPTS="-s 2048 -m sys /dev/$DISK_NAME"
 
 # Setup storage with label APKOVL for config storage
 #LBUOPTS="LABEL=APKOVL"
