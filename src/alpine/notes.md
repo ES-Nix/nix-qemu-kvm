@@ -647,8 +647,8 @@ SSHDOPTS="-c openssh"
 #ROOTSSHKEY="https://example.com/juser.keys"
 
 # Use openntpd
-# NTPOPTS="-c openntpd"
-NTPOPTS=none
+NTPOPTS="-c openntpd"
+# NTPOPTS=none
 
 # Use /dev/vda as a sys disk
 DISKOPTS="-s 2048 -m sys /dev/$DISK_NAME"
