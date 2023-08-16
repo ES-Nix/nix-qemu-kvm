@@ -95,6 +95,7 @@
             export TMPDIR=/tmp
 
             # find . -type f -iname '*.nix' -exec nixpkgs-fmt {} \;
+            export LD_LIBRARY_PATH="$(nix build --no-link --print-out-paths nixpkgs#glibc)/lib"
           '';
         };
 
