@@ -112,6 +112,14 @@ echo "$(id -un):123" | sudo chpasswd
 sudo sed -i 's/^[^#]*'"$(id -un)"' ALL=(ALL) NOPASSWD:ALL/# &/' /etc/sudoers.d/90-cloud-init-users
 ```
 
+Missing `tmp`? Yeah, Ubuntu stuff...
+```bash
+sudo systemctl enable /usr/share/systemd/tmp.mount
+```
+Refs.:
+- https://askubuntu.com/a/1416156
+
+
 ## Installing via git
 
 
