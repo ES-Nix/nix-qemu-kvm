@@ -124,6 +124,11 @@ Refs.:
 
 
 ```bash
+nix run github:ES-Nix/nix-qemu-kvm/dev#ssh-vm-starts-vm-if-not-running
+```
+
+
+```bash
 git clone git@github.com:ES-Nix/nix-qemu-kvm.git \
 && cd nix-qemu-kvm \
 && git checkout c16c4bed78398af43cd3d3f0f1ddb4491df5f479 \
