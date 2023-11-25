@@ -2,10 +2,11 @@
   description = "A flake that has a minimal shell that is able to run cloud images";
 
   inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-22.11";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = allAttrs@{ self, nixpkgs, flake-utils, ...}:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgsAllowUnfree = import nixpkgs {
@@ -14,8 +15,14 @@
         };
 
         pkgs = nixpkgs.legacyPackages.${system};
+
+          # https://gist.github.com/tpwrules/34db43e0e2e9d0b72d30534ad2cda66d#file-flake-nix-L28
+          pleaseKeepMyInputs = pkgsAllowUnfree.writeTextDir "bin/.please-keep-my-inputs"
+            (builtins.concatStringsSep " " (builtins.attrValues allAttrs));
       in
       rec {
+
+          formatter = pkgsAllowUnfree.nixpkgs-fmt;
 
         # It should be groupped somehow
         packages.vm-kill = import ./src/utils/vm-kill.nix { inherit pkgs; };
@@ -87,7 +94,7 @@
             nixpkgs-fmt
             # shellcheck # ghc-8.10.6
             findutils
-
+            pleaseKeepMyInputs
           ];
 
           shellHook = ''
@@ -95,7 +102,14 @@
             export TMPDIR=/tmp
 
             # find . -type f -iname '*.nix' -exec nixpkgs-fmt {} \;
-            export LD_LIBRARY_PATH="$(nix build --no-link --print-out-paths nixpkgs#glibc)/lib"
+
+              test -d .profiles || mkdir -v .profiles
+
+              test -L .profiles/dev \
+              || nix develop .# --profile .profiles/dev --command true
+
+              test -L .profiles/dev-shell-default \
+              || nix build $(nix eval --impure --raw .#devShells."$system".default.drvPath) --out-link .profiles/dev-shell-"$system"-default
           '';
         };
 

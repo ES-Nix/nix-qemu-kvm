@@ -131,6 +131,13 @@ git clone git@github.com:ES-Nix/nix-qemu-kvm.git \
 && ./result/runVM
 ```
 
+
+```bash
+nix flake show github:ES-Nix/nix-qemu-kvm/063b117a2d7096ec9ec66c259dc1fb678b0f6094
+```
+
+
+
 ## Credits 
 
 Most of this source is from [zimbatm](https://github.com/zimbatm/nix-experiments/tree/5e4f6941b8f3e90525c4b2acbdd78c766e1f757e/ubuntu-vm).
