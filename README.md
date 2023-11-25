@@ -124,7 +124,7 @@ Refs.:
 
 
 ```bash
-git clone https://github.com/ES-Nix/nix-qemu-kvm.git \
+git clone git@github.com:ES-Nix/nix-qemu-kvm.git \
 && cd nix-qemu-kvm \
 && git checkout c16c4bed78398af43cd3d3f0f1ddb4491df5f479 \
 && nix build .#myqemu.prepare \
