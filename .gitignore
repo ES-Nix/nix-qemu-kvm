@@ -7,3 +7,4 @@ disk.qcow2.backup
 *.backup
 *.iso
 .direnv/*
+.profiles/
