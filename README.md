@@ -309,11 +309,17 @@ groups
 ```
 
 
-
+TODO: re-read all
 > "L0" – the bare metal host, running KVM
 > "L1" – a VM running on L0; also called the "guest hypervisor" — as it itself is capable of running KVM
 > "L2" – a VM running on L1, also called the "nested guest"
 > From: https://www.linux-kvm.org/page/Nested_Guests
+
++
+https://medium.com/codemonday/setup-virt-manager-qemu-libvert-and-kvm-on-ubuntu-20-04-fa448bdecde3
++
+https://medium.com/storpool/nested-virtualization-and-pci-passthrough-with-kvm-and-opennebula-88253a2453c0
+
 
 
 ```bash
